@@ -1,3 +1,12 @@
+<!--
+  public/index.html
+  Alterações principais:
+  - Barra de navegação consistente com Início, Artigos, Temas, Sobre, Admin.
+  - Link "Criar artigo" visível apenas quando autenticado; ao clicar define flag segura em sessionStorage e navega para /admin.html para abrir o modal automaticamente.
+  - Destaque automático do item de menu ativo.
+  - Scripts defensivos (try/catch) para ambientes sem sessionStorage.
+  - Pequenas melhorias de acessibilidade (aria-labels, role).
+-->
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -5,8 +14,9 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Novo Despertar — Início</title>
   <style>
-    :root{--bg:#0e0e0f;--panel:#111;--muted:#e6e6e6;--accent:#c9a86a;--maxw:980px}
-    *{box-sizing:border-box} body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted)}
+    :root{--bg:#0e0e0f;--panel:#111;--muted:#e6e6e6;--accent:#c9a86a;--maxw:980px;--radius:8px}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased}
     header.site{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #222;z-index:40}
     .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
     .brand{font-weight:700;color:var(--accent);text-decoration:none}
@@ -16,40 +26,84 @@
     h1{margin:0 0 12px}
     .lead{color:rgba(230,230,230,0.9);font-size:18px;line-height:1.6}
     .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px}
-    .card{background:rgba(255,255,255,0.02);padding:16px;border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
+    .card{background:rgba(255,255,255,0.02);padding:16px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.02)}
     a.cta{display:inline-block;margin-top:12px;padding:8px 12px;border-radius:6px;background:var(--accent);color:#111;text-decoration:none}
+    .small{font-size:13px;color:rgba(230,230,230,0.75)}
     @media(max-width:760px){.cards{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-  <header class="site">
+  <header class="site" role="banner">
     <nav class="nav" role="navigation" aria-label="Main navigation">
-      <a class="brand" href="/">Novo Despertar</a>
-      <a href="/index.html" class="active">Início</a>
-      <a href="/artigos.html">Artigos</a>
-      <a href="/temas.html">Temas</a>
-      <a href="/sobre.html">Sobre</a>
-      <a href="/admin.html" style="margin-left:auto">Admin</a>
+      <a class="brand" href="/" data-nav="index">Novo Despertar</a>
+      <a href="/index.html" data-nav="index">Início</a>
+      <a href="/artigos.html" data-nav="artigos">Artigos</a>
+      <a href="/temas.html" data-nav="temas">Temas</a>
+      <a href="/sobre.html" data-nav="sobre">Sobre</a>
+      <a id="createLink" href="/admin.html" style="display:none;margin-left:8px">Criar artigo</a>
+      <a href="/admin.html" data-nav="admin" style="margin-left:auto">Admin</a>
     </nav>
   </header>
 
-  <main class="wrap">
+  <main class="wrap" role="main">
     <h1>Bem‑vindo ao Novo Despertar</h1>
     <p class="lead">Espaço dedicado a textos, reflexões e recursos sobre consciência, práticas e temas que nos ajudam a despertar. Navega pelos artigos, explora os temas e usa a área administrativa para publicar novos conteúdos.</p>
 
-    <div class="cards">
-      <div class="card">
+    <div class="cards" role="region" aria-label="Ações rápidas">
+      <div class="card" role="article">
         <strong>Últimos artigos</strong>
-        <p class="small" style="margin-top:8px;color:rgba(230,230,230,0.75)">Ver a lista completa de artigos publicados.</p>
+        <p class="small" style="margin-top:8px">Ver a lista completa de artigos publicados.</p>
         <a class="cta" href="/artigos.html">Ver artigos</a>
       </div>
 
-      <div class="card">
+      <div class="card" role="article">
         <strong>Temas</strong>
-        <p class="small" style="margin-top:8px;color:rgba(230,230,230,0.75)">Agrupamentos por categoria para facilitar a leitura e estudo.</p>
+        <p class="small" style="margin-top:8px">Agrupamentos por categoria para facilitar a leitura e estudo.</p>
         <a class="cta" href="/temas.html">Explorar temas</a>
       </div>
     </div>
   </main>
+
+  <script>
+    // Defensive sessionStorage helpers
+    function safeGet(key){ try { return sessionStorage.getItem(key); } catch (e) { return null; } }
+    function safeSet(key, val){ try { sessionStorage.setItem(key, val); } catch (e) { /* ignore */ } }
+    function safeRemove(key){ try { sessionStorage.removeItem(key); } catch (e) { /* ignore */ } }
+
+    // Menu: highlight active item and show "Criar artigo" when authenticated.
+    (function initMenu(){
+      const map = {
+        '/': 'index','/index.html':'index','/artigos.html':'artigos',
+        '/temas.html':'temas','/sobre.html':'sobre','/admin.html':'admin',
+        '/artigo-exemplo.html':'artigos'
+      };
+      const path = location.pathname || '/';
+      const key = map[path] || null;
+      document.querySelectorAll('nav a[data-nav]').forEach(a => {
+        a.classList.toggle('active', a.getAttribute('data-nav') === key);
+      });
+
+      const createLink = document.getElementById('createLink');
+      try {
+        const token = safeGet('nd_token');
+        if (createLink) createLink.style.display = token ? 'inline-block' : 'none';
+
+        if (createLink) {
+          createLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            // set flag so admin opens modal after auth
+            safeSet('nd_open_new', '1');
+            // if already on admin page and modal function exists, open without navigation
+            if (location.pathname.endsWith('/admin.html')) {
+              try { if (typeof openModalForNew === 'function') { safeRemove('nd_open_new'); openModalForNew(); return; } } catch (err) {}
+            }
+            location.href = createLink.href || '/admin.html';
+          });
+        }
+      } catch (err) {
+        if (createLink) createLink.style.display = 'none';
+      }
+    })();
+  </script>
 </body>
 </html>

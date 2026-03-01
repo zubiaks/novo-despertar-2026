@@ -1,3 +1,13 @@
+<!--
+  public/admin.html
+  Mudanças aplicadas:
+  - Barra de navegação consistente (Início, Artigos, Temas, Sobre, Admin) com destaque automático do item ativo.
+  - Link "Criar artigo" visível apenas quando autenticado; ao clicar em outras páginas define uma flag e navega para o admin; aqui abre o modal sem reload.
+  - Modal de criar/editar com foco automático, ESC para fechar, validações (título mínimo 3, resumo máx. 600).
+  - Placeholders blur-up para miniaturas, lazy-load, decoding async e swap não bloqueante.
+  - Robustez: tratamento seguro de sessionStorage, fetch com parsing tolerante, mensagens de erro amigáveis.
+  - Acessibilidade: roles, aria-live, aria-hidden, foco lógico no modal e no conteúdo.
+-->
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -5,52 +15,71 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Admin — Novo Despertar</title>
   <style>
-    :root{--bg:#0e0e0f;--panel:#111;--muted:#e6e6e6;--accent:#c9a86a;--danger:#ff6b6b;--maxw:980px}
-    *{box-sizing:border-box} body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted)}
+    :root{
+      --bg:#0e0e0f; --panel:#111; --muted:#e6e6e6; --accent:#c9a86a;
+      --danger:#ff6b6b; --maxw:980px; --radius:8px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased}
     header.site{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #222;z-index:40}
-    .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+    .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:12px}
     .brand{font-weight:700;color:var(--accent);text-decoration:none}
     .nav a{color:var(--muted);text-decoration:none;padding:6px 8px;border-radius:6px}
     .nav a.active{background:#0b0b0b}
     .wrap{max-width:var(--maxw);margin:18px auto;padding:20px}
-    .card{background:rgba(255,255,255,0.02);padding:14px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);margin-bottom:14px}
+    .card{background:rgba(255,255,255,0.02);padding:14px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.02);margin-bottom:14px}
+    label{display:block;margin:8px 0 6px;font-size:14px}
+    input[type="text"], input[type="email"], input[type="password"], textarea, select{
+      width:100%;padding:10px;border-radius:6px;border:1px solid #222;background:#0b0b0b;color:var(--muted)
+    }
     .thumb{width:120px;height:80px;object-fit:cover;border-radius:6px;filter:blur(8px);transform:scale(1.02);transition:filter .35s ease, transform .35s ease}
     .thumb.loaded{filter:blur(0);transform:scale(1)}
-    .modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px}
-    .modal .box{background:var(--panel);padding:16px;border-radius:8px;max-width:760px;width:100%}
-    .hidden{display:none}
+    .muted{color:rgba(230,230,230,0.7);font-size:13px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .list{margin-top:12px}
+    .list-item{display:flex;gap:12px;align-items:flex-start;padding:10px;border-bottom:1px solid #1a1a1a}
+    .meta{color:rgba(230,230,230,0.7);font-size:13px}
+    .title{font-weight:700;margin:0}
+    .actions{display:flex;gap:8px;margin-left:auto}
     .small{font-size:13px;color:rgba(230,230,230,0.75)}
     button{background:var(--accent);color:#111;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
     button.ghost{background:transparent;border:1px solid #333;color:var(--muted)}
     button.danger{background:var(--danger);color:#111}
-    @media(max-width:760px){.thumb{width:80px;height:60px}}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px}
+    .modal .box{background:var(--panel);padding:16px;border-radius:8px;max-width:760px;width:100%;outline:0}
+    .hidden{display:none}
+    .error{color:var(--danger)}
+    @media(max-width:760px){.row{grid-template-columns:1fr} .thumb{width:80px;height:60px}}
   </style>
 </head>
 <body>
   <header class="site">
-    <nav class="nav" role="navigation" aria-label="Admin navigation">
+    <nav class="nav" role="navigation" aria-label="Main navigation">
       <a class="brand" href="/">Novo Despertar</a>
-      <a href="/artigos.html">Artigos</a>
-      <a href="/artigo-exemplo.html">Exemplo</a>
-      <a href="/admin.html" class="active">Admin</a>
-      <div style="margin-left:auto" class="small">Área administrativa</div>
+      <a href="/index.html" data-nav="index">Início</a>
+      <a href="/artigos.html" data-nav="artigos">Artigos</a>
+      <a href="/temas.html" data-nav="temas">Temas</a>
+      <a href="/sobre.html" data-nav="sobre">Sobre</a>
+      <a id="createLink" href="/admin.html" style="display:none;margin-left:8px">Criar artigo</a>
+      <a href="/admin.html" data-nav="admin" style="margin-left:auto">Admin</a>
     </nav>
   </header>
 
-  <main class="wrap">
-    <div class="card" id="loginCard">
+  <main class="wrap" id="main">
+    <div class="card" id="loginCard" aria-live="polite">
       <div class="muted">Login</div>
       <label for="email">Email</label>
-      <input id="email" type="email" placeholder="teu@exemplo.com" />
+      <input id="email" type="email" placeholder="teu@exemplo.com" autocomplete="username" />
       <label for="password">Password</label>
-      <input id="password" type="password" placeholder="••••••••" />
+      <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
       <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
         <button id="btnLogin">Entrar</button>
-        <div class="small" id="loginMsg"></div>
+        <div class="small" id="loginMsg" role="status" aria-live="polite"></div>
       </div>
     </div>
 
-    <div class="card hidden" id="adminCard">
+    <div class="card hidden" id="adminCard" aria-hidden="true">
       <div style="display:flex;align-items:center;gap:12px">
         <div class="muted">Gerir artigos</div>
         <div style="margin-left:auto;display:flex;gap:8px">
@@ -70,59 +99,98 @@
   </main>
 
   <!-- Modal: criar / editar -->
-  <div id="modal" class="modal hidden" aria-hidden="true">
-    <div class="box">
+  <div id="modal" class="modal hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="box" tabindex="-1">
       <h2 id="modalTitle">Novo artigo</h2>
+
       <div style="display:flex;gap:12px;align-items:center">
         <div style="flex:1">
-          <label>Título</label>
+          <label for="m_title">Título</label>
           <input id="m_title" type="text" />
         </div>
         <div style="width:180px">
-          <label>Data (YYYY-MM-DD)</label>
+          <label for="m_date">Data (YYYY-MM-DD)</label>
           <input id="m_date" type="text" />
         </div>
       </div>
 
-      <label>Categoria</label>
+      <label for="m_category">Categoria</label>
       <input id="m_category" type="text" />
 
-      <label>Resumo</label>
-      <textarea id="m_excerpt" rows="3"></textarea>
+      <label for="m_excerpt">Resumo</label>
+      <textarea id="m_excerpt" rows="3" maxlength="600"></textarea>
+      <div class="small" id="excerptHint">Máx. 600 caracteres</div>
 
-      <label>Imagem (opcional)</label>
+      <label for="m_image">Imagem (opcional)</label>
       <input id="m_image" type="file" accept="image/*" />
-      <img id="m_preview" class="thumb" style="display:none;margin-top:8px" loading="lazy" decoding="async" />
+      <img id="m_preview" class="thumb" style="display:none;margin-top:8px" loading="lazy" decoding="async" alt="Pré-visualização da imagem" />
 
-      <label>Conteúdo</label>
+      <label for="m_content">Conteúdo</label>
       <textarea id="m_content" rows="6"></textarea>
 
       <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
         <button id="btnCancel" class="ghost">Cancelar</button>
         <button id="btnSave">Guardar</button>
       </div>
-      <div class="small" id="modalMsg" style="margin-top:8px"></div>
+      <div class="small" id="modalMsg" style="margin-top:8px" role="status" aria-live="polite"></div>
     </div>
   </div>
 
   <script>
-    const placeholderSVG = encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80"><rect width="100%" height="100%" fill="#0b0b0b"/><rect x="6" y="6" width="108" height="68" rx="6" fill="#1a1a1a"/></svg>'
-    );
-    const placeholderData = 'data:image/svg+xml;charset=utf-8,' + placeholderSVG;
-
+    /* Utilities */
     const el = id => document.getElementById(id);
+    const safeJSON = async (res) => {
+      const text = await res.text();
+      try { return JSON.parse(text); } catch { return null; }
+    };
     const api = async (path, opts = {}) => {
       const res = await fetch(path, opts);
-      const text = await res.text();
-      try { return { ok: res.ok, status: res.status, json: JSON.parse(text) }; } catch { return { ok: res.ok, status: res.status, text }; }
+      const json = await safeJSON(res);
+      return { ok: res.ok, status: res.status, json, text: json ? null : await (async ()=>{ try { return await res.text(); } catch { return null; } })() };
     };
-    const setMsg = (id, txt, ok=true) => { const e = el(id); e.textContent = txt; e.style.color = ok ? 'var(--muted)' : 'var(--danger)'; };
+    const setMsg = (id, txt, ok=true) => { const e = el(id); if (!e) return; e.textContent = txt; e.style.color = ok ? 'var(--muted)' : 'var(--danger)'; };
 
-    function getToken(){ return sessionStorage.getItem('nd_token'); }
-    function saveToken(t){ sessionStorage.setItem('nd_token', t); }
-    function clearToken(){ sessionStorage.removeItem('nd_token'); }
+    /* Placeholder for thumbnails */
+    const placeholderSVG = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80"><rect width="100%" height="100%" fill="#0b0b0b"/><rect x="6" y="6" width="108" height="68" rx="6" fill="#1a1a1a"/></svg>');
+    const placeholderData = 'data:image/svg+xml;charset=utf-8,' + placeholderSVG;
 
+    /* sessionStorage helpers (safe) */
+    function getToken(){ try { return sessionStorage.getItem('nd_token'); } catch { return null; } }
+    function saveToken(t){ try { sessionStorage.setItem('nd_token', t); } catch {} }
+    function clearToken(){ try { sessionStorage.removeItem('nd_token'); } catch {} }
+
+    /* Menu: active item + createLink behavior */
+    (function initMenu(){
+      const map = {
+        '/': 'index','/index.html':'index','/artigos.html':'artigos',
+        '/temas.html':'temas','/sobre.html':'sobre','/admin.html':'admin',
+        '/artigo-exemplo.html':'artigos'
+      };
+      const navEls = document.querySelectorAll('nav .nav a[data-nav]');
+      const path = location.pathname || '/';
+      const key = map[path] || null;
+      navEls.forEach(a => a.classList.toggle('active', a.getAttribute('data-nav') === key));
+
+      const createLink = el('createLink');
+      try {
+        const token = getToken();
+        if (createLink) createLink.style.display = token ? 'inline-block' : 'none';
+        // intercept click: if on admin page, open modal directly; otherwise set flag and navigate
+        if (createLink) {
+          createLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            try { sessionStorage.setItem('nd_open_new', '1'); } catch (err) { /* ignore */ }
+            // if already on admin page and modal function exists, open without navigation
+            if (location.pathname.endsWith('/admin.html')) {
+              try { if (typeof openModalForNew === 'function') { sessionStorage.removeItem('nd_open_new'); openModalForNew(); return; } } catch (err) {}
+            }
+            location.href = createLink.href || '/admin.html';
+          });
+        }
+      } catch (e) { if (createLink) createLink.style.display = 'none'; }
+    })();
+
+    /* Admin core */
     let editingId = null;
 
     el('btnLogin').addEventListener('click', async () => {
@@ -136,25 +204,63 @@
       setMsg('loginMsg', 'Autenticado');
       showAdmin();
       loadArticles();
+      const createLink = el('createLink'); if (createLink) createLink.style.display = 'inline-block';
+      // if flag present, open modal
+      tryAutoOpenNew();
     });
 
     el('btnLogout').addEventListener('click', () => {
       clearToken();
       showLogin();
       setMsg('loginMsg','Sessão terminada');
+      const createLink = el('createLink'); if (createLink) createLink.style.display = 'none';
     });
 
-    function showLogin(){ el('loginCard').classList.remove('hidden'); el('adminCard').classList.add('hidden'); }
-    function showAdmin(){ el('loginCard').classList.add('hidden'); el('adminCard').classList.remove('hidden'); }
+    function showLogin(){ el('loginCard').classList.remove('hidden'); el('adminCard').classList.add('hidden'); el('adminCard').setAttribute('aria-hidden','true'); }
+    function showAdmin(){ el('loginCard').classList.add('hidden'); el('adminCard').classList.remove('hidden'); el('adminCard').removeAttribute('aria-hidden'); }
 
+    /* Try auto-login on load and open modal if flagged */
     (async function tryAuto() {
       const token = getToken();
       if (!token) return showLogin();
       const res = await api('/auth/me', { headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } });
-      if (res.ok) { showAdmin(); setMsg('loginMsg', 'Autenticado como ' + res.json.email); loadArticles(); }
-      else { clearToken(); showLogin(); }
+      if (res.ok) {
+        showAdmin();
+        setMsg('loginMsg', 'Autenticado como ' + (res.json?.email || ''));
+        loadArticles();
+        tryAutoOpenNew();
+      } else {
+        clearToken();
+        showLogin();
+      }
     })();
 
+    /* If sessionStorage.nd_open_new is set, open modal after UI ready */
+    function tryAutoOpenNew() {
+      try {
+        const shouldOpen = sessionStorage.getItem('nd_open_new');
+        if (!shouldOpen) return;
+        sessionStorage.removeItem('nd_open_new');
+        const tryOpen = () => {
+          if (typeof openModalForNew === 'function') {
+            openModalForNew();
+            return true;
+          }
+          return false;
+        };
+        if (!tryOpen()) {
+          let attempts = 0;
+          const retry = setInterval(() => {
+            attempts++;
+            if (tryOpen() || attempts > 12) clearInterval(retry);
+          }, 80);
+        }
+      } catch (err) {
+        console.warn('auto-open modal check failed', err);
+      }
+    }
+
+    /* Load articles (max 200) */
     async function loadArticles(q='') {
       el('articlesList').innerHTML = '<div class="small">A carregar…</div>';
       try {
@@ -176,7 +282,7 @@
         const thumb = a.imageThumbUrl || a.imageUrl || '';
         const thumbSrc = thumb || placeholderData;
         div.innerHTML = `
-          ${thumb ? `<img data-src="${thumbSrc}" src="${placeholderData}" class="thumb" alt="" loading="lazy" decoding="async">` : `<img src="${placeholderData}" class="thumb" alt="" loading="lazy" decoding="async">`}
+          ${thumb ? `<img data-src="${thumbSrc}" src="${placeholderData}" class="thumb" alt="${escapeHtml(a.title)}" loading="lazy" decoding="async">` : `<img src="${placeholderData}" class="thumb" alt="${escapeHtml(a.title)}" loading="lazy" decoding="async">`}
           <div style="flex:1">
             <div class="title">${escapeHtml(a.title)}</div>
             <div class="meta">${new Date(a.date).toLocaleDateString('pt-PT')} · ${escapeHtml(a.category||'')}</div>
@@ -190,7 +296,7 @@
         el('articlesList').appendChild(div);
       });
 
-      // lazy swap images
+      // lazy swap images (non-blocking)
       document.querySelectorAll('img[data-src]').forEach(img => {
         const real = img.getAttribute('data-src');
         const loader = new Image();
@@ -205,6 +311,7 @@
 
     function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+    /* New article */
     el('btnNew').addEventListener('click', () => openModalForNew());
 
     function openModalForNew() {
@@ -220,8 +327,10 @@
       el('modal').classList.remove('hidden');
       el('modal').setAttribute('aria-hidden','false');
       setMsg('modalMsg','');
+      setTimeout(()=>{ const box = document.querySelector('#modal .box'); if (box) box.focus(); const first = el('m_title'); if (first) first.focus(); }, 50);
     }
 
+    /* Edit */
     async function onEdit(e) {
       const id = e.currentTarget.dataset.id;
       try {
@@ -242,11 +351,13 @@
         el('modal').classList.remove('hidden');
         el('modal').setAttribute('aria-hidden','false');
         setMsg('modalMsg','');
+        setTimeout(()=>{ const first = el('m_title'); if (first) first.focus(); }, 50);
       } catch (err) {
         alert('Erro ao carregar artigo');
       }
     }
 
+    /* Delete */
     async function onDelete(e) {
       const id = e.currentTarget.dataset.id;
       if (!confirm('Apagar este artigo? Esta ação é irreversível.')) return;
@@ -257,24 +368,36 @@
       loadArticles(el('search').value.trim());
     }
 
+    /* Preview image in modal */
     el('m_image').addEventListener('change', () => {
       const f = el('m_image').files && el('m_image').files[0];
       if (!f) { el('m_preview').style.display = 'none'; el('m_preview').src = ''; return; }
       el('m_preview').src = URL.createObjectURL(f);
       el('m_preview').style.display = 'block';
+      el('m_preview').classList.add('loaded');
     });
 
+    /* Cancel modal */
     el('btnCancel').addEventListener('click', () => closeModal());
 
     function closeModal() {
       el('modal').classList.add('hidden');
       el('modal').setAttribute('aria-hidden','true');
       setMsg('modalMsg','');
+      const btn = el('btnNew') || el('btnLogin');
+      if (btn) btn.focus();
     }
 
+    /* ESC to close modal */
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !el('modal').classList.contains('hidden')) closeModal();
+    });
+
+    /* Save (create or update) */
     el('btnSave').addEventListener('click', async () => {
       const title = el('m_title').value.trim();
-      if (!title) { setMsg('modalMsg','Título é obrigatório', false); return; }
+      if (!title || title.length < 3) { setMsg('modalMsg','Título é obrigatório (mín. 3 caracteres)', false); return; }
+      if (el('m_excerpt').value.length > 600) { setMsg('modalMsg','Resumo demasiado longo (máx. 600 caracteres)', false); return; }
       const token = getToken();
       if (!token) { setMsg('modalMsg','Não autenticado', false); return; }
 
@@ -331,6 +454,7 @@
       }
     });
 
+    /* Search handlers */
     el('btnSearch').addEventListener('click', () => loadArticles(el('search').value.trim()));
     el('search').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadArticles(el('search').value.trim()); });
 

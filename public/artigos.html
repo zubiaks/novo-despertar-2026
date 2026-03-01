@@ -1,3 +1,12 @@
+<!--
+  public/artigos.html
+  Melhorias aplicadas:
+  - Barra de navegação consistente (Início, Artigos, Temas, Sobre, Admin) com destaque automático do item ativo.
+  - Link "Criar artigo" visível apenas quando autenticado; ao clicar define uma flag segura em sessionStorage e navega para /admin.html para abrir o modal automaticamente.
+  - Placeholders blur-up para miniaturas; lazy-load, decoding="async" e swap não bloqueante.
+  - Pesquisa, paginação e meta; tratamento robusto de fetch e mensagens de erro.
+  - Scripts defensivos para ambientes sem sessionStorage; atributos de acessibilidade básicos.
+-->
 <!DOCTYPE html>
 <html lang="pt">
 <head>
@@ -5,8 +14,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Artigos — Novo Despertar</title>
   <style>
-    :root{--bg:#0e0e0f;--panel:#111;--muted:#e6e6e6;--accent:#c9a86a;--maxw:980px}
-    *{box-sizing:border-box} body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted)}
+    :root{
+      --bg:#0e0e0f; --panel:#111; --muted:#e6e6e6; --accent:#c9a86a;
+      --maxw:980px; --radius:8px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased}
     header.site{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #222;z-index:40}
     .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
     .brand{font-weight:700;color:var(--accent);text-decoration:none}
@@ -16,7 +30,7 @@
     .controls{display:flex;gap:8px;align-items:center}
     input[type="search"]{width:320px;padding:8px;border-radius:6px;border:1px solid #222;background:#0b0b0b;color:var(--muted)}
     .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-    .card{background:rgba(255,255,255,0.02);padding:14px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);cursor:pointer}
+    .card{background:rgba(255,255,255,0.02);padding:14px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.02);cursor:pointer}
     .thumb{width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:8px;filter:blur(8px);transform:scale(1.02);transition:filter .35s ease, transform .35s ease}
     .thumb.loaded{filter:blur(0);transform:scale(1)}
     .meta{color:rgba(230,230,230,0.7);font-size:13px;margin-bottom:8px}
@@ -26,6 +40,7 @@
     button{background:var(--accent);color:#111;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
     button[disabled]{opacity:0.45;cursor:default}
     .small{font-size:13px;color:rgba(230,230,230,0.75)}
+    .empty{margin-top:18px;text-align:center;color:rgba(230,230,230,0.6)}
     @media(max-width:760px){.grid{grid-template-columns:1fr} input[type="search"]{width:100%}}
     a.card{color:inherit;text-decoration:none;display:block}
   </style>
@@ -34,60 +49,109 @@
   <header class="site">
     <nav class="nav" role="navigation" aria-label="Main navigation">
       <a class="brand" href="/">Novo Despertar</a>
-      <a href="/artigos.html" class="active">Artigos</a>
-      <a href="/artigo-exemplo.html">Exemplo</a>
-      <a href="/admin.html">Admin</a>
-      <div style="margin-left:auto" class="controls">
-        <input id="q" type="search" placeholder="Pesquisar título, categoria ou excerto…" />
+      <a href="/index.html" data-nav="index">Início</a>
+      <a href="/artigos.html" data-nav="artigos">Artigos</a>
+      <a href="/temas.html" data-nav="temas">Temas</a>
+      <a href="/sobre.html" data-nav="sobre">Sobre</a>
+      <a id="createLink" href="/admin.html" style="display:none;margin-left:8px">Criar artigo</a>
+      <a href="/admin.html" data-nav="admin" style="margin-left:auto">Admin</a>
+    </nav>
+  </header>
+
+  <main class="wrap" id="main" role="main">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <div style="flex:1">
+        <input id="q" type="search" placeholder="Pesquisar título, categoria ou excerto…" aria-label="Pesquisar artigos" />
+      </div>
+      <div>
         <select id="limit" title="Itens por página" style="padding:8px;border-radius:6px;background:#0b0b0b;color:var(--muted);border:1px solid #222">
           <option value="6">6 / página</option>
           <option value="12">12 / página</option>
           <option value="24">24 / página</option>
         </select>
       </div>
-    </nav>
-  </header>
+    </div>
 
-  <main class="wrap">
-    <div id="results" class="grid"></div>
+    <div id="results" class="grid" aria-live="polite" aria-busy="false"></div>
 
-    <div class="pager" id="pager" style="display:none">
+    <div class="pager" id="pager" style="display:none" aria-hidden="true">
       <button id="first">Primeira</button>
       <button id="prev">Anterior</button>
-      <div class="small" id="pageInfo"></div>
+      <div class="small" id="pageInfo" aria-live="polite"></div>
       <button id="next">Seguinte</button>
       <button id="last">Última</button>
     </div>
 
-    <div id="empty" class="small" style="margin-top:18px;display:none">Nenhum artigo encontrado.</div>
+    <div id="empty" class="empty" style="display:none">Nenhum artigo encontrado.</div>
   </main>
 
   <script>
-    const placeholderSVG = encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200"><rect width="100%" height="100%" fill="#0b0b0b"/><g fill="#1a1a1a"><rect x="16" y="16" width="288" height="168" rx="8"/></g></svg>'
-    );
+    // Placeholder SVG (blur-up)
+    const placeholderSVG = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200"><rect width="100%" height="100%" fill="#0b0b0b"/><rect x="16" y="16" width="288" height="168" rx="8" fill="#1a1a1a"/></svg>');
     const placeholderData = 'data:image/svg+xml;charset=utf-8,' + placeholderSVG;
 
-    const apiFetch = async (path) => {
+    // Defensive helpers
+    function safeGetSession(key) { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
+    function safeSetSession(key, val) { try { sessionStorage.setItem(key, val); } catch (e) { /* ignore */ } }
+    function safeRemoveSession(key) { try { sessionStorage.removeItem(key); } catch (e) { /* ignore */ } }
+
+    // Menu: active item + createLink behavior
+    (function initMenu(){
+      const map = {'/':'index','/index.html':'index','/artigos.html':'artigos','/temas.html':'temas','/sobre.html':'sobre','/admin.html':'admin','/artigo-exemplo.html':'artigos'};
+      const navEls = document.querySelectorAll('nav .nav a[data-nav]');
+      const path = location.pathname || '/';
+      const key = map[path] || null;
+      navEls.forEach(a => a.classList.toggle('active', a.getAttribute('data-nav') === key));
+
+      const createLink = document.getElementById('createLink');
+      try {
+        const token = safeGetSession('nd_token');
+        if (createLink) createLink.style.display = token ? 'inline-block' : 'none';
+
+        if (createLink) {
+          createLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            // set flag so admin opens modal after auth
+            safeSetSession('nd_open_new', '1');
+            // if already on admin page and modal function exists, open immediately
+            if (location.pathname.endsWith('/admin.html')) {
+              try { if (typeof openModalForNew === 'function') { safeRemoveSession('nd_open_new'); openModalForNew(); return; } } catch (err) {}
+            }
+            location.href = createLink.href || '/admin.html';
+          });
+        }
+      } catch (err) {
+        if (createLink) createLink.style.display = 'none';
+      }
+    })();
+
+    // API fetch helper
+    async function apiFetch(path) {
       const res = await fetch(path, { headers: { Accept: 'application/json' } });
       if (!res.ok) throw new Error('Erro na API');
       return res.json();
-    };
+    }
 
     function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
+    // Pagination & state
     let page = 1;
     let limit = Number(document.getElementById('limit').value);
     let query = '';
 
     async function load() {
+      const resultsEl = document.getElementById('results');
+      resultsEl.setAttribute('aria-busy', 'true');
       try {
         const url = `/api/articles?search=${encodeURIComponent(query)}&page=${page}&limit=${limit}`;
         const j = await apiFetch(url);
         render(j);
       } catch (err) {
-        document.getElementById('results').innerHTML = '<div class="small">Erro ao carregar artigos.</div>';
+        resultsEl.innerHTML = '<div class="small">Erro ao carregar artigos.</div>';
         document.getElementById('pager').style.display = 'none';
+        document.getElementById('empty').style.display = 'none';
+      } finally {
+        resultsEl.setAttribute('aria-busy', 'false');
       }
     }
 
@@ -104,16 +168,19 @@
         container.innerHTML = list.map(a => {
           const thumb = a.imageThumbUrl || a.imageUrl || '';
           const thumbSrc = thumb ? escapeHtml(thumb) : placeholderData;
+          const alt = escapeHtml(a.title || 'Imagem do artigo');
           return `
-          <a class="card" href="/artigo-exemplo.html?slug=${encodeURIComponent(a.slug)}">
-            ${thumb ? `<img data-src="${thumbSrc}" src="${placeholderData}" class="thumb" alt="" loading="lazy" decoding="async">` : `<img src="${placeholderData}" class="thumb" alt="" loading="lazy" decoding="async">`}
-            <div class="meta">${new Date(a.date).toLocaleDateString('pt-PT')} · ${escapeHtml(a.category || '')}</div>
-            <div class="title">${escapeHtml(a.title)}</div>
-            <div class="excerpt">${escapeHtml((a.excerpt || a.content || '').slice(0, 260))}</div>
-          </a>
-        `}).join('');
+            <a class="card" href="/artigo-exemplo.html?slug=${encodeURIComponent(a.slug)}" aria-label="${escapeHtml(a.title)}">
+              ${thumb ? `<img data-src="${thumbSrc}" src="${placeholderData}" class="thumb" alt="${alt}" loading="lazy" decoding="async">` : `<img src="${placeholderData}" class="thumb" alt="${alt}" loading="lazy" decoding="async">`}
+              <div class="meta">${new Date(a.date).toLocaleDateString('pt-PT')} · ${escapeHtml(a.category || '')}</div>
+              <div class="title">${escapeHtml(a.title)}</div>
+              <div class="excerpt">${escapeHtml((a.excerpt || a.content || '').slice(0, 260))}</div>
+            </a>
+          `;
+        }).join('');
       }
 
+      // pager UI
       document.getElementById('pager').style.display = meta.total > meta.limit ? 'flex' : 'none';
       document.getElementById('pageInfo').textContent = `Página ${meta.page} de ${meta.pages} — ${meta.total} artigo(s)`;
       document.getElementById('prev').disabled = meta.page <= 1;
@@ -121,25 +188,19 @@
       document.getElementById('next').disabled = meta.page >= meta.pages;
       document.getElementById('last').disabled = meta.page >= meta.pages;
 
-      // inicia carregamento das imagens reais
+      // non-blocking image swap (blur-up)
       requestAnimationFrame(() => {
         document.querySelectorAll('img[data-src]').forEach(img => {
           const real = img.getAttribute('data-src');
           const loader = new Image();
           loader.src = real;
-          loader.onload = () => {
-            img.src = real;
-            img.classList.add('loaded');
-            img.removeAttribute('data-src');
-          };
-          loader.onerror = () => {
-            img.classList.add('loaded');
-            img.removeAttribute('data-src');
-          };
+          loader.onload = () => { img.src = real; img.classList.add('loaded'); img.removeAttribute('data-src'); };
+          loader.onerror = () => { img.classList.add('loaded'); img.removeAttribute('data-src'); };
         });
       });
     }
 
+    // Controls
     document.getElementById('q').addEventListener('input', (e) => {
       query = e.target.value;
       page = 1;
@@ -170,6 +231,7 @@
       debounceTimer = setTimeout(load, 350);
     }
 
+    // initial load
     load();
   </script>
 </body>
