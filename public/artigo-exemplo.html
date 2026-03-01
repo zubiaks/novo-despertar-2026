@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Artigo — Novo Despertar</title>
+  <meta name="description" content="Artigo do Novo Despertar">
+  <style>
+    :root{--bg:#0e0e0f;--panel:#111;--muted:#e6e6e6;--accent:#c9a86a;--maxw:900px}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased}
+    header.site{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #222;z-index:40}
+    .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+    .brand{font-weight:700;color:var(--accent);text-decoration:none}
+    .wrap{max-width:var(--maxw);margin:36px auto;padding:0 20px}
+    a{color:var(--accent);text-decoration:none}
+    h1{margin:18px 0 6px;font-size:28px}
+    .meta{color:rgba(230,230,230,0.7);margin-bottom:18px}
+    .lead{font-size:16px;opacity:0.95;margin-bottom:18px}
+    .feature-wrap{margin-bottom:18px}
+    img.feature{max-width:100%;border-radius:8px;display:block;filter:blur(8px);transform:scale(1.02);transition:filter .35s ease, transform .35s ease}
+    img.feature.loaded{filter:blur(0);transform:scale(1)}
+    .small{font-size:13px;color:rgba(230,230,230,0.75)}
+    .center{text-align:center}
+    .error{color:#ff6b6b}
+    footer{border-top:1px solid #222;padding:26px 20px;text-align:center;color:rgba(230,230,230,0.75);margin-top:40px}
+  </style>
+</head>
+<body>
+  <header class="site">
+    <nav class="nav" role="navigation" aria-label="Main navigation">
+      <a class="brand" href="/">Novo Despertar</a>
+      <a href="/artigos.html">Artigos</a>
+      <a href="/admin.html">Admin</a>
+    </nav>
+  </header>
+
+  <main class="wrap" id="main">
+    <div id="loading" class="center small">A carregar artigo…</div>
+
+    <article id="article" style="display:none">
+      <h1 id="title"></h1>
+      <div class="meta" id="meta"></div>
+
+      <div class="feature-wrap" id="featureWrap" style="display:none">
+        <img id="articleImage" class="feature" src="" alt="" loading="lazy" decoding="async" />
+      </div>
+
+      <div id="content" class="lead"></div>
+    </article>
+
+    <div id="notfound" class="center error" style="display:none">Artigo não encontrado.</div>
+  </main>
+
+  <footer>© Novo Despertar — 2026</footer>
+
+  <script>
+    function getParam(name) {
+      const url = new URL(location.href);
+      return url.searchParams.get(name);
+    }
+
+    function setText(id, text) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text || '';
+    }
+
+    async function fetchArticleByIdOrSlug(idOrSlug) {
+      const res = await fetch('/api/articles/' + encodeURIComponent(idOrSlug), { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error('Not found');
+      return res.json();
+    }
+
+    async function fetchFirstArticle() {
+      const res = await fetch('/api/articles', { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error('Failed');
+      const j = await res.json();
+      const list = j.results || [];
+      return list[0] || null;
+    }
+
+    (async function init() {
+      const loading = document.getElementById('loading');
+      const articleEl = document.getElementById('article');
+      const notfound = document.getElementById('notfound');
+
+      try {
+        let slug = getParam('slug') || getParam('id');
+        let article = null;
+
+        if (slug) {
+          try {
+            article = await fetchArticleByIdOrSlug(slug);
+          } catch (e) {
+            article = null;
+          }
+        }
+
+        if (!article) {
+          article = await fetchFirstArticle();
+        }
+
+        if (!article) {
+          loading.style.display = 'none';
+          notfound.style.display = 'block';
+          return;
+        }
+
+        loading.style.display = 'none';
+        articleEl.style.display = 'block';
+        setText('title', article.title);
+        setText('meta', (new Date(article.date)).toLocaleDateString('pt-PT') + (article.category ? ' · ' + article.category : ''));
+
+        if (article.imageUrl || article.imageThumbUrl) {
+          const img = document.getElementById('articleImage');
+          const wrap = document.getElementById('featureWrap');
+
+          const thumb = article.imageThumbUrl || article.imageUrl;
+          const large = article.imageUrl || article.imageThumbUrl;
+
+          // placeholder SVG
+          const placeholderSVG = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200"><rect width="100%" height="100%" fill="#0b0b0b"/><rect x="16" y="16" width="288" height="168" rx="8" fill="#1a1a1a"/></svg>');
+          const placeholderData = 'data:image/svg+xml;charset=utf-8,' + placeholderSVG;
+
+          img.src = placeholderData;
+          img.setAttribute('data-src', thumb);
+          img.srcset = `${thumb} 320w, ${large} 1200w`;
+          img.sizes = '(max-width:600px) 320px, 1200px';
+          img.alt = article.title || 'Imagem do artigo';
+          wrap.style.display = 'block';
+
+          // load real image and remove blur
+          const real = img.getAttribute('data-src');
+          const loader = new Image();
+          loader.src = real;
+          loader.onload = () => {
+            img.src = real;
+            img.classList.add('loaded');
+            img.removeAttribute('data-src');
+          };
+          loader.onerror = () => {
+            img.classList.add('loaded');
+            img.removeAttribute('data-src');
+          };
+        }
+
+        setText('content', article.content || article.excerpt || '');
+
+      } catch (err) {
+        console.error(err);
+        loading.style.display = 'none';
+        notfound.style.display = 'block';
+      }
+    })();
+  </script>
+</body>
+</html>

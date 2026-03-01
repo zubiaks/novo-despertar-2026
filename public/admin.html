@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin — Novo Despertar</title>
+  <style>
+    :root{--bg:#0e0e0f;--panel:#111;--muted:#e6e6e6;--accent:#c9a86a;--danger:#ff6b6b;--maxw:980px}
+    *{box-sizing:border-box} body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted)}
+    header.site{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #222;z-index:40}
+    .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+    .brand{font-weight:700;color:var(--accent);text-decoration:none}
+    .nav a{color:var(--muted);text-decoration:none;padding:6px 8px;border-radius:6px}
+    .nav a.active{background:#0b0b0b}
+    .wrap{max-width:var(--maxw);margin:18px auto;padding:20px}
+    .card{background:rgba(255,255,255,0.02);padding:14px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);margin-bottom:14px}
+    .thumb{width:120px;height:80px;object-fit:cover;border-radius:6px;filter:blur(8px);transform:scale(1.02);transition:filter .35s ease, transform .35s ease}
+    .thumb.loaded{filter:blur(0);transform:scale(1)}
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px}
+    .modal .box{background:var(--panel);padding:16px;border-radius:8px;max-width:760px;width:100%}
+    .hidden{display:none}
+    .small{font-size:13px;color:rgba(230,230,230,0.75)}
+    button{background:var(--accent);color:#111;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid #333;color:var(--muted)}
+    button.danger{background:var(--danger);color:#111}
+    @media(max-width:760px){.thumb{width:80px;height:60px}}
+  </style>
+</head>
+<body>
+  <header class="site">
+    <nav class="nav" role="navigation" aria-label="Admin navigation">
+      <a class="brand" href="/">Novo Despertar</a>
+      <a href="/artigos.html">Artigos</a>
+      <a href="/artigo-exemplo.html">Exemplo</a>
+      <a href="/admin.html" class="active">Admin</a>
+      <div style="margin-left:auto" class="small">Área administrativa</div>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <div class="card" id="loginCard">
+      <div class="muted">Login</div>
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="teu@exemplo.com" />
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="••••••••" />
+      <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+        <button id="btnLogin">Entrar</button>
+        <div class="small" id="loginMsg"></div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="adminCard">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div class="muted">Gerir artigos</div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button id="btnNew" class="ghost">Novo artigo</button>
+          <button id="btnLogout" class="ghost">Sair</button>
+        </div>
+      </div>
+
+      <div class="muted" style="margin-top:12px">Pesquisar</div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <input id="search" type="text" placeholder="Pesquisar título, categoria ou excerto" />
+        <button id="btnSearch" class="ghost">Pesquisar</button>
+      </div>
+
+      <div class="list" id="articlesList" style="margin-top:12px"></div>
+    </div>
+  </main>
+
+  <!-- Modal: criar / editar -->
+  <div id="modal" class="modal hidden" aria-hidden="true">
+    <div class="box">
+      <h2 id="modalTitle">Novo artigo</h2>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div style="flex:1">
+          <label>Título</label>
+          <input id="m_title" type="text" />
+        </div>
+        <div style="width:180px">
+          <label>Data (YYYY-MM-DD)</label>
+          <input id="m_date" type="text" />
+        </div>
+      </div>
+
+      <label>Categoria</label>
+      <input id="m_category" type="text" />
+
+      <label>Resumo</label>
+      <textarea id="m_excerpt" rows="3"></textarea>
+
+      <label>Imagem (opcional)</label>
+      <input id="m_image" type="file" accept="image/*" />
+      <img id="m_preview" class="thumb" style="display:none;margin-top:8px" loading="lazy" decoding="async" />
+
+      <label>Conteúdo</label>
+      <textarea id="m_content" rows="6"></textarea>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="btnCancel" class="ghost">Cancelar</button>
+        <button id="btnSave">Guardar</button>
+      </div>
+      <div class="small" id="modalMsg" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <script>
+    const placeholderSVG = encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80" viewBox="0 0 120 80"><rect width="100%" height="100%" fill="#0b0b0b"/><rect x="6" y="6" width="108" height="68" rx="6" fill="#1a1a1a"/></svg>'
+    );
+    const placeholderData = 'data:image/svg+xml;charset=utf-8,' + placeholderSVG;
+
+    const el = id => document.getElementById(id);
+    const api = async (path, opts = {}) => {
+      const res = await fetch(path, opts);
+      const text = await res.text();
+      try { return { ok: res.ok, status: res.status, json: JSON.parse(text) }; } catch { return { ok: res.ok, status: res.status, text }; }
+    };
+    const setMsg = (id, txt, ok=true) => { const e = el(id); e.textContent = txt; e.style.color = ok ? 'var(--muted)' : 'var(--danger)'; };
+
+    function getToken(){ return sessionStorage.getItem('nd_token'); }
+    function saveToken(t){ sessionStorage.setItem('nd_token', t); }
+    function clearToken(){ sessionStorage.removeItem('nd_token'); }
+
+    let editingId = null;
+
+    el('btnLogin').addEventListener('click', async () => {
+      setMsg('loginMsg', 'A autenticar...');
+      const email = el('email').value.trim();
+      const password = el('password').value;
+      if (!email || !password) { setMsg('loginMsg','Preenche email e password', false); return; }
+      const res = await api('/auth/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email, password }) });
+      if (!res.ok) { setMsg('loginMsg', res.json?.error || 'Erro no login', false); return; }
+      saveToken(res.json.token);
+      setMsg('loginMsg', 'Autenticado');
+      showAdmin();
+      loadArticles();
+    });
+
+    el('btnLogout').addEventListener('click', () => {
+      clearToken();
+      showLogin();
+      setMsg('loginMsg','Sessão terminada');
+    });
+
+    function showLogin(){ el('loginCard').classList.remove('hidden'); el('adminCard').classList.add('hidden'); }
+    function showAdmin(){ el('loginCard').classList.add('hidden'); el('adminCard').classList.remove('hidden'); }
+
+    (async function tryAuto() {
+      const token = getToken();
+      if (!token) return showLogin();
+      const res = await api('/auth/me', { headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } });
+      if (res.ok) { showAdmin(); setMsg('loginMsg', 'Autenticado como ' + res.json.email); loadArticles(); }
+      else { clearToken(); showLogin(); }
+    })();
+
+    async function loadArticles(q='') {
+      el('articlesList').innerHTML = '<div class="small">A carregar…</div>';
+      try {
+        const url = q ? `/api/articles?search=${encodeURIComponent(q)}&page=1&limit=200` : `/api/articles?limit=200&page=1`;
+        const res = await api(url);
+        if (!res.ok) { el('articlesList').innerHTML = '<div class="small">Erro ao carregar artigos.</div>'; return; }
+        renderList(res.json.results || []);
+      } catch (err) {
+        el('articlesList').innerHTML = '<div class="small">Erro ao carregar artigos.</div>';
+      }
+    }
+
+    function renderList(list) {
+      if (!list.length) { el('articlesList').innerHTML = '<div class="small">Nenhum artigo.</div>'; return; }
+      el('articlesList').innerHTML = '';
+      list.forEach(a => {
+        const div = document.createElement('div');
+        div.className = 'list-item';
+        const thumb = a.imageThumbUrl || a.imageUrl || '';
+        const thumbSrc = thumb || placeholderData;
+        div.innerHTML = `
+          ${thumb ? `<img data-src="${thumbSrc}" src="${placeholderData}" class="thumb" alt="" loading="lazy" decoding="async">` : `<img src="${placeholderData}" class="thumb" alt="" loading="lazy" decoding="async">`}
+          <div style="flex:1">
+            <div class="title">${escapeHtml(a.title)}</div>
+            <div class="meta">${new Date(a.date).toLocaleDateString('pt-PT')} · ${escapeHtml(a.category||'')}</div>
+            <div class="small" style="margin-top:6px">${escapeHtml(a.excerpt||'')}</div>
+          </div>
+          <div class="actions">
+            <button class="ghost" data-id="${a.id}" data-action="edit">Editar</button>
+            <button class="danger" data-id="${a.id}" data-action="delete">Apagar</button>
+          </div>
+        `;
+        el('articlesList').appendChild(div);
+      });
+
+      // lazy swap images
+      document.querySelectorAll('img[data-src]').forEach(img => {
+        const real = img.getAttribute('data-src');
+        const loader = new Image();
+        loader.src = real;
+        loader.onload = () => { img.src = real; img.classList.add('loaded'); img.removeAttribute('data-src'); };
+        loader.onerror = () => { img.classList.add('loaded'); img.removeAttribute('data-src'); };
+      });
+
+      el('articlesList').querySelectorAll('button[data-action="edit"]').forEach(b => b.addEventListener('click', onEdit));
+      el('articlesList').querySelectorAll('button[data-action="delete"]').forEach(b => b.addEventListener('click', onDelete));
+    }
+
+    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    el('btnNew').addEventListener('click', () => openModalForNew());
+
+    function openModalForNew() {
+      editingId = null;
+      el('modalTitle').textContent = 'Novo artigo';
+      el('m_title').value = '';
+      el('m_date').value = new Date().toISOString().slice(0,10);
+      el('m_category').value = '';
+      el('m_excerpt').value = '';
+      el('m_content').value = '';
+      el('m_image').value = '';
+      el('m_preview').style.display = 'none';
+      el('modal').classList.remove('hidden');
+      el('modal').setAttribute('aria-hidden','false');
+      setMsg('modalMsg','');
+    }
+
+    async function onEdit(e) {
+      const id = e.currentTarget.dataset.id;
+      try {
+        const res = await api('/api/articles/' + encodeURIComponent(id), { headers: { Accept: 'application/json' } });
+        if (!res.ok) { alert('Erro ao carregar artigo'); return; }
+        const a = res.json;
+        editingId = a.id;
+        el('modalTitle').textContent = 'Editar artigo';
+        el('m_title').value = a.title || '';
+        el('m_date').value = a.date || new Date().toISOString().slice(0,10);
+        el('m_category').value = a.category || '';
+        el('m_excerpt').value = a.excerpt || '';
+        el('m_content').value = a.content || '';
+        el('m_image').value = '';
+        if (a.imageThumbUrl) { el('m_preview').src = a.imageThumbUrl; el('m_preview').style.display = 'block'; el('m_preview').classList.add('loaded'); }
+        else if (a.imageUrl) { el('m_preview').src = a.imageUrl; el('m_preview').style.display = 'block'; el('m_preview').classList.add('loaded'); }
+        else { el('m_preview').style.display = 'none'; }
+        el('modal').classList.remove('hidden');
+        el('modal').setAttribute('aria-hidden','false');
+        setMsg('modalMsg','');
+      } catch (err) {
+        alert('Erro ao carregar artigo');
+      }
+    }
+
+    async function onDelete(e) {
+      const id = e.currentTarget.dataset.id;
+      if (!confirm('Apagar este artigo? Esta ação é irreversível.')) return;
+      const token = getToken();
+      if (!token) { alert('Não autenticado'); return; }
+      const res = await api('/api/articles/' + encodeURIComponent(id), { method:'DELETE', headers: { Authorization: 'Bearer ' + token } });
+      if (!res.ok) { alert(res.json?.error || 'Erro ao apagar'); return; }
+      loadArticles(el('search').value.trim());
+    }
+
+    el('m_image').addEventListener('change', () => {
+      const f = el('m_image').files && el('m_image').files[0];
+      if (!f) { el('m_preview').style.display = 'none'; el('m_preview').src = ''; return; }
+      el('m_preview').src = URL.createObjectURL(f);
+      el('m_preview').style.display = 'block';
+    });
+
+    el('btnCancel').addEventListener('click', () => closeModal());
+
+    function closeModal() {
+      el('modal').classList.add('hidden');
+      el('modal').setAttribute('aria-hidden','true');
+      setMsg('modalMsg','');
+    }
+
+    el('btnSave').addEventListener('click', async () => {
+      const title = el('m_title').value.trim();
+      if (!title) { setMsg('modalMsg','Título é obrigatório', false); return; }
+      const token = getToken();
+      if (!token) { setMsg('modalMsg','Não autenticado', false); return; }
+
+      setMsg('modalMsg','A guardar...');
+      try {
+        let imageUrl = null;
+        let imageThumbUrl = null;
+
+        if (el('m_image').files && el('m_image').files[0]) {
+          const fd = new FormData();
+          fd.append('image', el('m_image').files[0]);
+          const up = await fetch('/api/upload', { method:'POST', headers: { Authorization: 'Bearer ' + token }, body: fd });
+          if (!up.ok) { const txt = await up.text().catch(()=>null); throw new Error(txt || 'Erro no upload'); }
+          const upj = await up.json();
+          imageUrl = upj.url || null;
+          imageThumbUrl = upj.thumbUrl || null;
+        }
+
+        const payload = {
+          title,
+          date: el('m_date').value || new Date().toISOString().slice(0,10),
+          category: el('m_category').value || null,
+          excerpt: el('m_excerpt').value || '',
+          content: el('m_content').value || '',
+          imageUrl,
+          imageThumbUrl
+        };
+
+        let res;
+        if (editingId) {
+          res = await api('/api/articles/' + encodeURIComponent(editingId), {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          res = await api('/api/articles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        if (!res.ok) {
+          setMsg('modalMsg', res.json?.error || 'Erro ao guardar', false);
+          return;
+        }
+
+        setMsg('modalMsg', 'Guardado com sucesso');
+        closeModal();
+        loadArticles(el('search').value.trim());
+      } catch (err) {
+        setMsg('modalMsg', err.message || 'Erro ao guardar', false);
+      }
+    });
+
+    el('btnSearch').addEventListener('click', () => loadArticles(el('search').value.trim()));
+    el('search').addEventListener('keydown', (e) => { if (e.key === 'Enter') loadArticles(el('search').value.trim()); });
+
+  </script>
+</body>
+</html>

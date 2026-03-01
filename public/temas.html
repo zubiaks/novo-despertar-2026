@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Temas — Novo Despertar</title>
+  <style>
+    :root{--bg:#0e0e0f;--panel:#111;--muted:#e6e6e6;--accent:#c9a86a;--maxw:980px}
+    *{box-sizing:border-box} body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted)}
+    header.site{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #222;z-index:40}
+    .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
+    .brand{font-weight:700;color:var(--accent);text-decoration:none}
+    .nav a{color:var(--muted);text-decoration:none;padding:6px 8px;border-radius:6px}
+    .nav a.active{background:#0b0b0b}
+    .wrap{max-width:var(--maxw);margin:28px auto;padding:20px}
+    h1{margin:0 0 12px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+    .tile{background:rgba(255,255,255,0.02);padding:14px;border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
+    .small{font-size:13px;color:rgba(230,230,230,0.75)}
+    @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header class="site">
+    <nav class="nav" role="navigation" aria-label="Main navigation">
+      <a class="brand" href="/">Novo Despertar</a>
+      <a href="/index.html">Início</a>
+      <a href="/artigos.html">Artigos</a>
+      <a href="/temas.html" class="active">Temas</a>
+      <a href="/sobre.html">Sobre</a>
+      <a href="/admin.html" style="margin-left:auto">Admin</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <h1>Temas</h1>
+    <p class="small">Agrupamentos de artigos por assunto. Clica num tema para ver artigos relacionados.</p>
+
+    <div class="grid" id="themesGrid">
+      <div class="tile"><strong>Consciência</strong><div class="small" style="margin-top:8px">Práticas, reflexões e estudos sobre consciência.</div></div>
+      <div class="tile"><strong>Meditação</strong><div class="small" style="margin-top:8px">Técnicas, guias e experiências.</div></div>
+      <div class="tile"><strong>Saúde Integral</strong><div class="small" style="margin-top:8px">Corpo, mente e nutrição.</div></div>
+      <div class="tile"><strong>Filosofia</strong><div class="small" style="margin-top:8px">Textos e ensaios.</div></div>
+      <div class="tile"><strong>Práticas</strong><div class="small" style="margin-top:8px">Exercícios e rotinas.</div></div>
+      <div class="tile"><strong>Recursos</strong><div class="small" style="margin-top:8px">Livros, podcasts e referências.</div></div>
+    </div>
+  </main>
+</body>
+</html>
