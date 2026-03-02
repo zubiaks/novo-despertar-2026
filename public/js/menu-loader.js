@@ -1,64 +1,82 @@
-// public/js/menu-loader.js
-(function injectThemeCss(){
-  try {
-    const href = '/css/theme.css?v=1';
-    if (!document.querySelector('link[href="'+href+'"]')) {
+// public/js/menu-loader.js — loader robusto de partials + assets
+(function(){
+  if (window.__nd_menu_loader) return;
+  window.__nd_menu_loader = true;
+
+  const insertHTML = (selector, html) => {
+    const el = document.querySelector(selector);
+    if (el) el.innerHTML = html;
+  };
+
+  const fetchText = async (url) => {
+    const res = await fetch(url, {cache: 'no-cache'});
+    if (!res.ok) throw new Error(`${url} -> ${res.status}`);
+    return res.text();
+  };
+
+  // carrega CSS do tema se não existir
+  const ensureThemeCss = () => {
+    if (!document.querySelector('link[href^="/css/theme.css"]')) {
       const l = document.createElement('link');
       l.rel = 'stylesheet';
-      l.href = href;
-      l.crossOrigin = 'anonymous';
+      l.href = '/css/theme.css?v=1';
       document.head.appendChild(l);
     }
-  } catch(e) { /* não bloqueia o loader */ }
-})();
+  };
 
-(async function(){
-  try {
-    const container = document.getElementById('site-menu');
-    if (!container) return;
+  // injeta script (evita duplicados)
+  const injectScript = (src) => {
+    if (document.querySelector(`script[src="${src}"]`)) return;
+    const s = document.createElement('script');
+    s.src = src;
+    s.defer = true;
+    document.head.appendChild(s);
+  };
 
-    const resp = await fetch('/partials/menu.html', { cache: 'no-cache' });
-    if (!resp.ok) {
-      container.innerHTML = '<nav><a href="/index.html">Novo Despertar</a></nav>';
-      return;
-    }
-    container.innerHTML = await resp.text();
+  const loadPartials = async () => {
+    try {
+      ensureThemeCss();
 
-    function getToken(){ try { return sessionStorage.getItem('nd_token'); } catch { return null; } }
-    function clearAuth(){ try { sessionStorage.removeItem('nd_token'); sessionStorage.removeItem('nd_open_new'); } catch {} }
+      const menuHtml = await fetchText('/partials/menu.html');
+      insertHTML('#site-menu', menuHtml);
 
-    const authEl = document.getElementById('nav-auth');
-    const token = getToken();
-    if (authEl) {
-      if (token) {
-        authEl.innerHTML = '<span class="nav-user">Admin</span><a href="/admin.html" id="nav-admin">Admin</a><button id="nav-logout" class="btn-link" aria-label="Logout">Logout</button>';
-        document.getElementById('nav-logout').addEventListener('click', (e) => { e.preventDefault(); clearAuth(); location.reload(); });
-      } else {
-        authEl.innerHTML = '<a href="/login.html" id="nav-login">Login</a>';
-      }
-    }
+      const footerHtml = await fetchText('/partials/footer.html');
+      insertHTML('#site-footer', footerHtml);
 
-    const toggle = document.getElementById('nav-toggle');
-    if (toggle) {
-      toggle.addEventListener('click', () => {
+      // carregar toasts.js automaticamente
+      try {
+        injectScript('/js/toasts.js');
+      } catch(e){ /* não bloqueia */ }
+
+      // inicializar comportamentos do menu (hamburger, token UI)
+      try {
         const nav = document.querySelector('.site-nav');
-        const expanded = nav.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-      });
-    }
+        const burger = document.querySelector('.site-nav .burger');
+        if (burger && nav) {
+          burger.addEventListener('click', ()=> nav.classList.toggle('open'));
+        }
 
-    // highlight active link based on data-nav attributes
-    const map = { '/': 'index', '/index.html': 'index', '/artigos.html': 'artigos', '/temas.html': 'temas', '/sobre.html': 'sobre', '/admin.html': 'admin' };
-    const key = map[location.pathname] || null;
-    document.querySelectorAll('.site-nav a[data-nav]').forEach(a => a.classList.toggle('active', a.getAttribute('data-nav') === key));
+        // token UI: mostra Admin/Logout se sessionStorage.nd_token
+        const token = sessionStorage.getItem('nd_token');
+        const authContainer = document.querySelector('.nav-auth');
+        if (authContainer) {
+          authContainer.innerHTML = token
+            ? '<a href="/admin.html" class="btn btn-outline">Admin</a> <button id="nd-logout" class="btn">Logout</button>'
+            : '<a href="/login.html" class="btn btn-outline">Login</a>';
+          const logoutBtn = document.getElementById('nd-logout');
+          if (logoutBtn) logoutBtn.addEventListener('click', ()=> { sessionStorage.removeItem('nd_token'); location.reload(); });
+        }
+      } catch(e){ console.warn('menu init failed', e); }
 
-    // preserve old behavior: open new-article modal if flag set and on admin page
-    if (location.pathname.endsWith('/admin.html')) {
-      const shouldOpen = (() => { try { return sessionStorage.getItem('nd_open_new'); } catch { return null; } })();
-      if (shouldOpen) {
-        try { sessionStorage.removeItem('nd_open_new'); } catch {}
-        setTimeout(() => { if (typeof openModalForNew === 'function') openModalForNew(); }, 200);
-      }
+    } catch(err){
+      console.error('menu-loader error', err);
     }
-  } catch (err) { console.error('menu-loader error', err); }
+  };
+
+  // run
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadPartials);
+  } else {
+    loadPartials();
+  }
 })();
