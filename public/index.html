@@ -3,71 +3,80 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Novo Despertar — Início</title>
-  <meta name="description" content="Artigos, práticas e recursos para crescimento pessoal e comunitário." />
-  <link rel="stylesheet" href="/css/styles.css" />
+  <title>Novo Despertar — Artigos e Reflexões</title>
+  <meta name="description" content="Artigos, práticas e recursos para crescimento pessoal e bem-estar." />
+  <link rel="stylesheet" href="/css/theme.css?v=1" />
   <link rel="icon" href="/favicon.ico" />
 </head>
 <body>
-  <!-- Menu centralizado (partial carregado por /js/menu-loader.js) -->
+  <!-- Menu (partial carregado por menu-loader.js) -->
   <div id="site-menu"></div>
   <script src="/js/menu-loader.js" defer></script>
+  <script src="/js/toasts.js" defer></script>
 
   <main class="container" id="main" role="main">
-    <header class="hero">
-      <div class="hero-inner">
-        <h1 class="hero-title">Novo Despertar</h1>
-        <p class="hero-lead">Textos, práticas e recursos para viver com mais presença e sentido.</p>
-        <p class="hero-cta">
-          <a class="btn" href="/artigos.html">Ver artigos</a>
-          <a class="btn btn-outline" href="/temas.html">Explorar temas</a>
-        </p>
-      </div>
+    <header class="hero" aria-labelledby="site-title">
+      <h1 id="site-title" class="hero-title">Novo Despertar</h1>
+      <p class="hero-lead">Textos, práticas e recursos para viver com mais presença e sentido.</p>
+      <p><a class="btn" href="/temas.html">Explorar Temas</a> <a class="btn btn-outline" href="/artigos.html">Ver Artigos</a></p>
     </header>
 
-    <section class="latest-articles" aria-labelledby="latest-heading">
-      <h2 id="latest-heading">Últimos artigos</h2>
-      <ul class="articles-grid" role="list" id="latest-list">
-        <!-- Espaço preenchido dinamicamente ou manualmente com cartões de artigo -->
+    <section aria-labelledby="latest-heading">
+      <h2 id="latest-heading" class="visually-hidden">Últimos artigos</h2>
+
+      <ul class="articles-grid" role="list" id="latest-articles">
+        <!-- Artigos carregados dinamicamente ou colocados estaticamente -->
         <li class="article-card" role="listitem">
-          <a href="/artigo-exemplo.html?slug=exemplo" class="article-link">
+          <a href="/artigo-exemplo.html" class="article-link">
             <div class="article-thumb" aria-hidden="true">
-              <img src="/assets/articles/exemplo-thumb.jpg" alt="" loading="lazy" width="480" height="320" />
+              <img src="/assets/articles/exemplo.jpg" alt="" loading="lazy" width="640" height="360" />
             </div>
             <div class="article-body">
-              <h3 class="article-title">Título de exemplo</h3>
-              <p class="article-excerpt">Resumo curto do artigo para despertar interesse e leitura.</p>
-              <time datetime="2026-03-01" class="article-date">1 Março 2026</time>
+              <h3 class="article-title">Como começar uma prática diária</h3>
+              <p class="article-excerpt">Pequenos passos para criar uma rotina que sustente presença e bem-estar.</p>
+            </div>
+          </a>
+        </li>
+        <li class="article-card" role="listitem">
+          <a href="/artigo-exemplo-2.html" class="article-link">
+            <div class="article-thumb" aria-hidden="true">
+              <img src="/assets/articles/exemplo2.jpg" alt="" loading="lazy" width="640" height="360" />
+            </div>
+            <div class="article-body">
+              <h3 class="article-title">Respiração consciente: guia prático</h3>
+              <p class="article-excerpt">Exercícios simples para reduzir ansiedade e aumentar foco.</p>
             </div>
           </a>
         </li>
       </ul>
-      <p class="more"><a href="/artigos.html">Ver todos os artigos</a></p>
     </section>
 
-    <section class="featured-themes" aria-labelledby="themes-heading">
-      <h2 id="themes-heading">Temas em destaque</h2>
-      <ul class="themes-inline" role="list">
-        <li role="listitem"><a href="/temas.html?tema=espiritualidade">Espiritualidade</a></li>
-        <li role="listitem"><a href="/temas.html?tema=saude-mental">Saúde Mental</a></li>
-        <li role="listitem"><a href="/temas.html?tema=praticas">Práticas</a></li>
-      </ul>
-    </section>
+    <aside class="sidebar" aria-label="Complementos">
+      <section class="subscribe">
+        <h4>Subscrever</h4>
+        <p>Recebe novidades por email sobre novos artigos e eventos.</p>
 
-    <aside class="newsletter" aria-labelledby="newsletter-heading">
-      <h2 id="newsletter-heading">Recebe novidades</h2>
-      <form id="subscribe-form" action="/api/subscribe" method="post" novalidate>
-        <label for="subscribe-email" class="visually-hidden">Email</label>
-        <input id="subscribe-email" name="email" type="email" placeholder="o teu email" required />
-        <button type="submit">Subscrever</button>
-      </form>
+        <form id="subscribe-form" action="/api/subscribe" method="post" novalidate>
+          <label for="subscribe-email" class="visually-hidden">Email</label>
+          <input id="subscribe-email" name="email" type="email" placeholder="o teu email" required />
+          <button type="submit" class="btn">Subscrever</button>
+        </form>
+      </section>
+
+      <section class="share" aria-labelledby="share-heading" style="margin-top:1.25rem">
+        <h4 id="share-heading">Partilhar</h4>
+        <p>Partilha esta página com quem possa beneficiar.</p>
+        <button id="copy-link" class="btn btn-outline">Copiar link</button>
+      </section>
     </aside>
   </main>
 
   <!-- Footer partial -->
   <div id="site-footer"></div>
+
+  <!-- Footer loader (fallback caso menu-loader não carregue footer) -->
   <script>
-    (async ()=>{
+    (async () => {
       const el = document.getElementById('site-footer');
       if (!el) return;
       try {
@@ -80,21 +89,51 @@
     })();
   </script>
 
-  <!-- Interações locais -->
+  <!-- Interações locais: subscribe + copiar link usando toasts -->
   <script>
     (function(){
+      // Subscribe form: usa toasts quando disponíveis
       const form = document.getElementById('subscribe-form');
-      if (!form) return;
-      form.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        const email = form.email.value.trim();
-        if (!email) return alert('Introduz um email válido.');
-        try {
-          const res = await fetch(form.action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
-          if (res.ok) { alert('Obrigado — subscrito!'); form.reset(); }
-          else { alert('Erro ao subscrever.'); }
-        } catch (err) { alert('Erro de rede.'); }
-      });
+      if (form) {
+        form.addEventListener('submit', async (ev) => {
+          ev.preventDefault();
+          const email = form.email.value.trim();
+          if (!email) {
+            if (window.toastWarn) { toastWarn('Introduz um email válido.'); } else { alert('Introduz um email válido.'); }
+            return;
+          }
+          try {
+            const res = await fetch(form.action, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email })
+            });
+            if (res.ok) {
+              if (window.toastSuccess) { toastSuccess('Obrigado — subscrito!'); } else { alert('Obrigado — subscrito!'); }
+              form.reset();
+            } else {
+              const text = await res.text().catch(()=>null);
+              const msg = text || 'Erro ao subscrever.';
+              if (window.toastError) { toastError(msg); } else { alert(msg); }
+            }
+          } catch (err) {
+            if (window.toastError) { toastError('Erro de rede.'); } else { alert('Erro de rede.'); }
+          }
+        });
+      }
+
+      // Copiar link da página
+      const copyBtn = document.getElementById('copy-link');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(location.href);
+            if (window.toastSuccess) { toastSuccess('Link copiado para a área de transferência.'); } else { alert('Link copiado.'); }
+          } catch (e) {
+            if (window.toastError) { toastError('Não foi possível copiar o link.'); } else { alert('Não foi possível copiar o link.'); }
+          }
+        });
+      }
     })();
   </script>
 </body>

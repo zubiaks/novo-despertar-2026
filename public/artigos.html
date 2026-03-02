@@ -4,66 +4,94 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Artigos — Novo Despertar</title>
-  <meta name="description" content="Lista de artigos, pesquisa e filtros do Novo Despertar." />
-  <link rel="stylesheet" href="/css/styles.css" />
+  <meta name="description" content="Coleção de artigos, guias e reflexões do Novo Despertar." />
+  <link rel="stylesheet" href="/css/theme.css?v=1" />
   <link rel="icon" href="/favicon.ico" />
 </head>
 <body>
-  <!-- Menu centralizado (partial carregado por /js/menu-loader.js) -->
+  <!-- Menu (partial carregado por menu-loader.js) -->
   <div id="site-menu"></div>
   <script src="/js/menu-loader.js" defer></script>
+  <script src="/js/toasts.js" defer></script>
 
   <main class="container" id="main" role="main">
     <header class="page-header">
       <h1>Artigos</h1>
-      <p class="lead">Últimos textos, reflexões e recursos. Pesquisa por título, filtra por tema ou ordena por data.</p>
+      <p class="lead">Explora artigos por tema, data e popularidade. Encontra práticas, entrevistas e guias práticos.</p>
     </header>
 
-    <section class="controls" aria-label="Controles de pesquisa e filtro">
-      <form id="search-form" class="search-form" role="search" aria-label="Pesquisar artigos">
-        <label for="q" class="visually-hidden">Pesquisar</label>
-        <input id="q" name="q" type="search" placeholder="Pesquisar artigos..." autocomplete="off" />
-        <button type="submit">Pesquisar</button>
-      </form>
+    <section aria-labelledby="filters-heading" style="margin-bottom:1.25rem">
+      <h2 id="filters-heading" class="visually-hidden">Filtros e pesquisa</h2>
 
-      <div class="filters" aria-hidden="false">
-        <label for="filter-theme" class="visually-hidden">Filtrar por tema</label>
-        <select id="filter-theme" name="tema">
+      <form id="filters-form" class="filters" action="#" onsubmit="return false;">
+        <input id="q" name="q" type="search" placeholder="Pesquisar artigos..." aria-label="Pesquisar artigos" />
+        <select id="filter-theme" name="theme" aria-label="Filtrar por tema">
           <option value="">Todos os temas</option>
           <option value="espiritualidade">Espiritualidade</option>
           <option value="saude-mental">Saúde Mental</option>
           <option value="praticas">Práticas</option>
           <option value="historia">História</option>
         </select>
-
-        <label for="sort-by" class="visually-hidden">Ordenar por</label>
-        <select id="sort-by" name="sort">
-          <option value="date_desc">Mais recentes</option>
-          <option value="date_asc">Mais antigos</option>
-          <option value="title_asc">Título A–Z</option>
-        </select>
-      </div>
+        <button id="apply-filters" class="btn" type="button">Aplicar</button>
+      </form>
     </section>
 
-    <section id="articles-section" aria-labelledby="articles-heading">
+    <section aria-labelledby="articles-heading">
       <h2 id="articles-heading" class="visually-hidden">Lista de artigos</h2>
 
-      <div id="articles-list" class="articles-grid" role="list">
-        <!-- Artigos carregados dinamicamente -->
-      </div>
+      <ul id="articles-grid" class="articles-grid" role="list">
+        <!-- Exemplo estático; em produção pode ser preenchido dinamicamente -->
+        <li class="article-card" role="listitem">
+          <a href="/artigo-exemplo.html" class="article-link">
+            <div class="article-thumb" aria-hidden="true">
+              <img src="/assets/articles/exemplo.jpg" alt="" loading="lazy" width="640" height="360" />
+            </div>
+            <div class="article-body">
+              <h3 class="article-title">Como começar uma prática diária</h3>
+              <p class="article-excerpt">Pequenos passos para criar uma rotina que sustente presença e bem-estar.</p>
+            </div>
+          </a>
+        </li>
+        <li class="article-card" role="listitem">
+          <a href="/artigo-exemplo-2.html" class="article-link">
+            <div class="article-thumb" aria-hidden="true">
+              <img src="/assets/articles/exemplo2.jpg" alt="" loading="lazy" width="640" height="360" />
+            </div>
+            <div class="article-body">
+              <h3 class="article-title">Respiração consciente: guia prático</h3>
+              <p class="article-excerpt">Exercícios simples para reduzir ansiedade e aumentar foco.</p>
+            </div>
+          </a>
+        </li>
+      </ul>
 
-      <nav id="pagination" class="pagination" aria-label="Paginação de artigos" hidden>
-        <button id="prev-page" aria-label="Página anterior">Anterior</button>
-        <span id="page-info" aria-live="polite"></span>
-        <button id="next-page" aria-label="Próxima página">Próxima</button>
+      <nav aria-label="Paginação" style="margin-top:1rem">
+        <button id="prev-page" class="btn btn-outline" type="button">Anterior</button>
+        <span id="page-info" style="margin:0 0.75rem">Página 1</span>
+        <button id="next-page" class="btn" type="button">Seguinte</button>
       </nav>
     </section>
+
+    <aside class="sidebar" aria-label="Complementos">
+      <section class="subscribe">
+        <h4>Subscrever</h4>
+        <p>Recebe novidades por email sobre novos artigos e eventos.</p>
+
+        <form id="subscribe-form" action="/api/subscribe" method="post" novalidate>
+          <label for="subscribe-email" class="visually-hidden">Email</label>
+          <input id="subscribe-email" name="email" type="email" placeholder="o teu email" required />
+          <button type="submit" class="btn">Subscrever</button>
+        </form>
+      </section>
+    </aside>
   </main>
 
   <!-- Footer partial -->
   <div id="site-footer"></div>
+
+  <!-- Fallback footer loader (caso menu-loader não carregue footer) -->
   <script>
-    (async ()=>{
+    (async () => {
       const el = document.getElementById('site-footer');
       if (!el) return;
       try {
@@ -76,130 +104,96 @@
     })();
   </script>
 
-  <!-- Script: carregar artigos via API e gerir pesquisa/filtragem -->
+  <!-- Interações locais: filtros, paginação e subscribe usando toasts -->
   <script>
     (function(){
-      const listEl = document.getElementById('articles-list');
-      const form = document.getElementById('search-form');
-      const qInput = document.getElementById('q');
-      const themeSelect = document.getElementById('filter-theme');
-      const sortSelect = document.getElementById('sort-by');
-      const pagination = document.getElementById('pagination');
-      const prevBtn = document.getElementById('prev-page');
-      const nextBtn = document.getElementById('next-page');
-      const pageInfo = document.getElementById('page-info');
+      // Utilitários
+      const el = (sel) => document.querySelector(sel);
+      const els = (sel) => Array.from(document.querySelectorAll(sel));
 
-      let page = 1;
-      const perPage = 10;
+      // Filtros e pesquisa
+      const qInput = el('#q');
+      const themeSelect = el('#filter-theme');
+      const applyBtn = el('#apply-filters');
+      const articlesGrid = el('#articles-grid');
+      const pageInfo = el('#page-info');
+      let currentPage = 1;
 
-      function renderArticleCard(a) {
-        const card = document.createElement('article');
-        card.className = 'article-card';
-        card.setAttribute('role', 'listitem');
-
-        const link = document.createElement('a');
-        link.className = 'article-link';
-        link.href = `/artigo-exemplo.html?slug=${encodeURIComponent(a.slug || a.id)}`;
-
-        const thumb = document.createElement('div');
-        thumb.className = 'article-thumb';
-        thumb.setAttribute('aria-hidden', 'true');
-        const img = document.createElement('img');
-        img.loading = 'lazy';
-        img.width = 480;
-        img.height = 320;
-        img.alt = a.imageAlt || '';
-        img.src = a.imageThumbUrl || a.imageUrl || '/assets/articles/default-thumb.jpg';
-        thumb.appendChild(img);
-
-        const body = document.createElement('div');
-        body.className = 'article-body';
-        const h3 = document.createElement('h3');
-        h3.className = 'article-title';
-        h3.textContent = a.title || 'Sem título';
-        const p = document.createElement('p');
-        p.className = 'article-excerpt';
-        p.textContent = a.excerpt || '';
-        const time = document.createElement('time');
-        time.className = 'article-date';
-        if (a.date) {
-          time.dateTime = a.date;
-          time.textContent = new Date(a.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' });
-        }
-
-        body.appendChild(h3);
-        body.appendChild(p);
-        body.appendChild(time);
-
-        link.appendChild(thumb);
-        link.appendChild(body);
-        card.appendChild(link);
-        return card;
-      }
-
-      async function fetchArticles({ q='', tema='', sort='date_desc', page=1, perPage=10 } = {}) {
-        // API contract: GET /api/articles?q=&tema=&sort=&page=&perPage=
-        const params = new URLSearchParams();
-        if (q) params.set('q', q);
-        if (tema) params.set('tema', tema);
-        if (sort) params.set('sort', sort);
-        params.set('page', String(page));
-        params.set('perPage', String(perPage));
-        const url = '/api/articles?' + params.toString();
+      async function loadArticles({ q='', theme='', page=1 } = {}) {
+        // Em ambiente real, chamaria a API: /api/articles?q=...&theme=...&page=...
+        // Aqui simulamos atraso e resposta
         try {
-          const res = await fetch(url, { cache: 'no-cache' });
-          if (!res.ok) {
-            const txt = await res.text();
-            listEl.innerHTML = `<p class="error">Erro ao carregar artigos: ${txt}</p>`;
-            pagination.hidden = true;
-            return { items: [], total: 0 };
+          // Simulação de rede
+          await new Promise(r => setTimeout(r, 300));
+          // Se não houver resultados simulados, mostramos toast
+          const simulatedHasResults = true; // ajustar conforme necessário
+          if (!simulatedHasResults) {
+            if (window.toastWarn) toastWarn('Nenhum artigo encontrado.');
+            else alert('Nenhum artigo encontrado.');
+            return;
           }
-          const json = await res.json();
-          // Expecting { items: [...], total: number }
-          return json;
+          // Atualiza UI (em produção, renderizar resultados reais)
+          pageInfo.textContent = `Página ${page}`;
+          currentPage = page;
+          if (window.toastInfo) toastInfo('Artigos atualizados.');
         } catch (err) {
-          listEl.innerHTML = '<p class="error">Erro de rede ao carregar artigos.</p>';
-          pagination.hidden = true;
-          return { items: [], total: 0 };
+          if (window.toastError) toastError('Erro ao carregar artigos.');
+          else alert('Erro ao carregar artigos.');
         }
       }
 
-      async function loadAndRender() {
-        listEl.innerHTML = '<p class="loading">A carregar artigos…</p>';
-        const q = qInput.value.trim();
-        const tema = themeSelect.value;
-        const sort = sortSelect.value;
-        const data = await fetchArticles({ q, tema, sort, page, perPage });
-        listEl.innerHTML = '';
-        if (!data.items || data.items.length === 0) {
-          listEl.innerHTML = '<p class="empty">Nenhum artigo encontrado.</p>';
-          pagination.hidden = true;
-          return;
-        }
-        data.items.forEach(a => listEl.appendChild(renderArticleCard(a)));
-        // pagination
-        const total = Number(data.total || data.items.length);
-        const totalPages = Math.max(1, Math.ceil(total / perPage));
-        pageInfo.textContent = `Página ${page} de ${totalPages}`;
-        prevBtn.disabled = page <= 1;
-        nextBtn.disabled = page >= totalPages;
-        pagination.hidden = false;
-      }
-
-      form.addEventListener('submit', (ev) => {
-        ev.preventDefault();
-        page = 1;
-        loadAndRender();
+      applyBtn && applyBtn.addEventListener('click', () => {
+        const q = qInput ? qInput.value.trim() : '';
+        const theme = themeSelect ? themeSelect.value : '';
+        loadArticles({ q, theme, page: 1 });
       });
 
-      themeSelect.addEventListener('change', () => { page = 1; loadAndRender(); });
-      sortSelect.addEventListener('change', () => { page = 1; loadAndRender(); });
+      // Paginação
+      const prevBtn = el('#prev-page');
+      const nextBtn = el('#next-page');
+      prevBtn && prevBtn.addEventListener('click', () => {
+        if (currentPage <= 1) {
+          if (window.toastWarn) toastWarn('Já estás na primeira página.'); else alert('Já estás na primeira página.');
+          return;
+        }
+        loadArticles({ page: currentPage - 1 });
+      });
+      nextBtn && nextBtn.addEventListener('click', () => {
+        loadArticles({ page: currentPage + 1 });
+      });
 
-      prevBtn.addEventListener('click', () => { if (page > 1) { page--; loadAndRender(); } });
-      nextBtn.addEventListener('click', () => { page++; loadAndRender(); });
+      // Subscribe form
+      const subscribeForm = el('#subscribe-form');
+      if (subscribeForm) {
+        subscribeForm.addEventListener('submit', async (ev) => {
+          ev.preventDefault();
+          const email = subscribeForm.email.value.trim();
+          if (!email) {
+            if (window.toastWarn) toastWarn('Introduz um email válido.'); else alert('Introduz um email válido.');
+            return;
+          }
+          try {
+            const res = await fetch(subscribeForm.action, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email })
+            });
+            if (res.ok) {
+              if (window.toastSuccess) toastSuccess('Obrigado — subscrito!'); else alert('Obrigado — subscrito!');
+              subscribeForm.reset();
+            } else {
+              const t = await res.text().catch(()=>null);
+              const msg = t || 'Erro ao subscrever.';
+              if (window.toastError) toastError(msg); else alert(msg);
+            }
+          } catch (err) {
+            if (window.toastError) toastError('Erro de rede.'); else alert('Erro de rede.');
+          }
+        });
+      }
 
-      // initial load
-      loadAndRender();
+      // Inicializar carregamento inicial
+      document.addEventListener('DOMContentLoaded', () => loadArticles({ page: 1 }));
     })();
   </script>
 </body>
