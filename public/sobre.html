@@ -1,124 +1,97 @@
-<!--
-  public/sobre.html
-  Alterações aplicadas:
-  - Barra de navegação consistente (Início, Artigos, Temas, Sobre, Admin) com destaque automático do item ativo.
-  - Link "Criar artigo" visível apenas quando autenticado (sessionStorage.nd_token); ao clicar define flag segura e navega para /admin.html para abrir o modal automaticamente.
-  - Scripts defensivos para ambientes sem sessionStorage; comportamento não bloqueante e acessibilidade básica.
--->
-<!DOCTYPE html>
-<html lang="pt">
+<!doctype html>
+<html lang="pt-PT">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Sobre — Novo Despertar</title>
-  <style>
-    :root{
-      --bg:#0e0e0f; --panel:#111; --muted:#e6e6e6; --accent:#c9a86a;
-      --maxw:900px; --radius:8px; --gap:16px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased}
-    header.site{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #222;z-index:40}
-    .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:12px}
-    .brand{font-weight:700;color:var(--accent);text-decoration:none}
-    .nav a{color:var(--muted);text-decoration:none;padding:6px 8px;border-radius:6px}
-    .nav a.active{background:#0b0b0b}
-    .wrap{max-width:var(--maxw);margin:28px auto;padding:20px}
-    h1{margin:0 0 12px}
-    h2{margin:18px 0 8px}
-    p{line-height:1.6;margin:0 0 12px}
-    .meta{color:rgba(230,230,230,0.75);font-size:14px}
-    .small{font-size:13px;color:rgba(230,230,230,0.75)}
-    a.cta{color:var(--accent);text-decoration:none}
-    footer{border-top:1px solid #222;padding:22px 20px;text-align:center;color:rgba(230,230,230,0.65);margin-top:36px}
-    @media(max-width:760px){ .nav{padding:10px} .wrap{padding:16px} }
-  </style>
+  <meta name="description" content="Sobre o projeto Novo Despertar: missão, equipa e contactos." />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="icon" href="/favicon.ico" />
 </head>
 <body>
-  <header class="site" role="banner">
-    <nav class="nav" role="navigation" aria-label="Main navigation">
-      <a class="brand" href="/" data-nav="index">Novo Despertar</a>
-      <a href="/index.html" data-nav="index">Início</a>
-      <a href="/artigos.html" data-nav="artigos">Artigos</a>
-      <a href="/temas.html" data-nav="temas">Temas</a>
-      <a href="/sobre.html" data-nav="sobre">Sobre</a>
-      <a id="createLink" href="/admin.html" style="display:none;margin-left:8px">Criar artigo</a>
-      <a href="/admin.html" data-nav="admin" style="margin-left:auto">Admin</a>
-    </nav>
-  </header>
+  <!-- Menu centralizado (partial carregado por /js/menu-loader.js) -->
+  <div id="site-menu"></div>
+  <script src="/js/menu-loader.js" defer></script>
 
-  <main class="wrap" role="main" id="main">
-    <h1>Sobre</h1>
-    <p class="meta">Projeto editorial independente dedicado a partilhar textos e recursos que apoiem práticas de presença, consciência e bem‑estar.</p>
+  <main class="container" id="main" role="main">
+    <header class="page-header">
+      <h1>Sobre</h1>
+      <p class="lead">Conhece a missão, a equipa e os princípios que orientam o Novo Despertar.</p>
+    </header>
 
-    <section aria-labelledby="missao" style="margin-top:18px">
-      <h2 id="missao">Missão</h2>
-      <p>Fomentar um espaço de reflexão e partilha onde leitores encontrem conteúdos práticos e inspiradores para o seu caminho pessoal. Priorizamos clareza, rigor e materiais que possam ser aplicados no dia a dia.</p>
+    <section class="about-intro" aria-labelledby="about-heading">
+      <h2 id="about-heading" class="visually-hidden">Informação sobre o projeto</h2>
+      <p>O Novo Despertar é um espaço dedicado a partilhas, práticas e reflexões para o crescimento pessoal e comunitário. Publicamos artigos, guias e recursos com foco em bem‑estar, espiritualidade e práticas diárias.</p>
     </section>
 
-    <section aria-labelledby="valores" style="margin-top:18px">
-      <h2 id="valores">Valores</h2>
-      <p class="small">Presença · Simplicidade · Respeito · Curiosidade</p>
-      <p>Os conteúdos procuram equilibrar experiência prática com referências e recursos que permitam aprofundar cada tema.</p>
+    <section class="about-mission" aria-labelledby="mission-heading">
+      <h2 id="mission-heading">Missão</h2>
+      <p>Nossa missão é oferecer conteúdo prático e inspirador que ajude as pessoas a viver com mais presença, equilíbrio e sentido.</p>
     </section>
 
-    <section aria-labelledby="contacto" style="margin-top:18px">
-      <h2 id="contacto">Contacto</h2>
-      <p>Para parcerias, envio de textos ou questões administrativas, acede à área Admin (área protegida) ou envia uma mensagem através dos contactos que disponibilizares na área administrativa.</p>
-      <p class="small">Se preferires, podes também usar o formulário de contacto que será disponibilizado na área administrativa em breve.</p>
+    <section class="about-team" aria-labelledby="team-heading">
+      <h2 id="team-heading">A equipa</h2>
+      <ul class="team-list" role="list">
+        <li class="team-member" role="listitem">
+          <h3 class="member-name">Pedro Zubiaks</h3>
+          <p class="member-role">Fundador e editor</p>
+        </li>
+        <li class="team-member" role="listitem">
+          <h3 class="member-name">Nome Exemplo</h3>
+          <p class="member-role">Colaborador</p>
+        </li>
+      </ul>
+    </section>
+
+    <section class="about-contact" aria-labelledby="contact-heading">
+      <h2 id="contact-heading">Contacto</h2>
+      <p>Para parcerias, propostas de publicação ou questões técnicas, envia um email para <a href="mailto:zubiaks@hotmail.com">zubiaks@hotmail.com</a>.</p>
+
+      <form id="contact-form" action="/api/contact" method="post" novalidate>
+        <label for="contact-name" class="visually-hidden">Nome</label>
+        <input id="contact-name" name="name" type="text" placeholder="O teu nome" required />
+        <label for="contact-email" class="visually-hidden">Email</label>
+        <input id="contact-email" name="email" type="email" placeholder="O teu email" required />
+        <label for="contact-message" class="visually-hidden">Mensagem</label>
+        <textarea id="contact-message" name="message" placeholder="A tua mensagem" rows="6" required></textarea>
+        <button type="submit">Enviar</button>
+      </form>
     </section>
   </main>
 
-  <footer role="contentinfo">© Novo Despertar — 2026</footer>
-
+  <!-- Footer partial -->
+  <div id="site-footer"></div>
   <script>
-    // Helpers seguros para sessionStorage (não falham se storage estiver bloqueado)
-    function safeGet(key){ try { return sessionStorage.getItem(key); } catch (e) { return null; } }
-    function safeSet(key, val){ try { sessionStorage.setItem(key, val); } catch (e) { /* ignore */ } }
-    function safeRemove(key){ try { sessionStorage.removeItem(key); } catch (e) { /* ignore */ } }
-
-    // Inicializa menu: destaca item ativo e controla visibilidade/comportamento do "Criar artigo"
-    (function initMenu(){
-      const map = {
-        '/': 'index','/index.html':'index','/artigos.html':'artigos',
-        '/temas.html':'temas','/sobre.html':'sobre','/admin.html':'admin',
-        '/artigo-exemplo.html':'artigos'
-      };
-      const navEls = document.querySelectorAll('nav a[data-nav]');
-      const path = location.pathname || '/';
-      const key = map[path] || null;
-      navEls.forEach(a => a.classList.toggle('active', a.getAttribute('data-nav') === key));
-
-      const createLink = document.getElementById('createLink');
+    (async ()=>{
+      const el = document.getElementById('site-footer');
+      if (!el) return;
       try {
-        const token = safeGet('nd_token');
-        if (createLink) createLink.style.display = token ? 'inline-block' : 'none';
-
-        if (createLink) {
-          createLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            // sinaliza ao admin para abrir o modal de novo artigo
-            safeSet('nd_open_new', '1');
-
-            // se já estivermos no admin e a função existir, abre sem navegar
-            if (location.pathname.endsWith('/admin.html')) {
-              try {
-                if (typeof openModalForNew === 'function') {
-                  safeRemove('nd_open_new');
-                  openModalForNew();
-                  return;
-                }
-              } catch (err) { /* ignore */ }
-            }
-
-            // navega para a página admin (a flag será lida lá)
-            location.href = createLink.href || '/admin.html';
-          });
-        }
-      } catch (err) {
-        if (createLink) createLink.style.display = 'none';
+        const r = await fetch('/partials/footer.html', { cache: 'no-cache' });
+        if (r.ok) el.innerHTML = await r.text();
+        else el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
+      } catch (e) {
+        el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
       }
+    })();
+  </script>
+
+  <!-- Interações locais: submissão do formulário de contacto -->
+  <script>
+    (function(){
+      const form = document.getElementById('contact-form');
+      if (!form) return;
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const name = form.name.value.trim();
+        const email = form.email.value.trim();
+        const message = form.message.value.trim();
+        if (!name || !email || !message) return alert('Preenche todos os campos.');
+        try {
+          const res = await fetch(form.action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, message }) });
+          if (res.ok) { alert('Mensagem enviada — obrigado!'); form.reset(); }
+          else { const t = await res.text(); alert('Erro: ' + (t || 'não foi possível enviar.')); }
+        } catch (err) { alert('Erro de rede.'); }
+      });
     })();
   </script>
 </body>

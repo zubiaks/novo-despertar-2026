@@ -1,238 +1,206 @@
-<!--
-  public/artigos.html
-  Melhorias aplicadas:
-  - Barra de navegação consistente (Início, Artigos, Temas, Sobre, Admin) com destaque automático do item ativo.
-  - Link "Criar artigo" visível apenas quando autenticado; ao clicar define uma flag segura em sessionStorage e navega para /admin.html para abrir o modal automaticamente.
-  - Placeholders blur-up para miniaturas; lazy-load, decoding="async" e swap não bloqueante.
-  - Pesquisa, paginação e meta; tratamento robusto de fetch e mensagens de erro.
-  - Scripts defensivos para ambientes sem sessionStorage; atributos de acessibilidade básicos.
--->
-<!DOCTYPE html>
-<html lang="pt">
+<!doctype html>
+<html lang="pt-PT">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Artigos — Novo Despertar</title>
-  <style>
-    :root{
-      --bg:#0e0e0f; --panel:#111; --muted:#e6e6e6; --accent:#c9a86a;
-      --maxw:980px; --radius:8px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased}
-    header.site{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #222;z-index:40}
-    .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
-    .brand{font-weight:700;color:var(--accent);text-decoration:none}
-    .nav a{color:var(--muted);text-decoration:none;padding:6px 8px;border-radius:6px}
-    .nav a.active{background:#0b0b0b}
-    .wrap{max-width:var(--maxw);margin:18px auto;padding:20px}
-    .controls{display:flex;gap:8px;align-items:center}
-    input[type="search"]{width:320px;padding:8px;border-radius:6px;border:1px solid #222;background:#0b0b0b;color:var(--muted)}
-    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-    .card{background:rgba(255,255,255,0.02);padding:14px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.02);cursor:pointer}
-    .thumb{width:100%;height:160px;object-fit:cover;border-radius:6px;margin-bottom:8px;filter:blur(8px);transform:scale(1.02);transition:filter .35s ease, transform .35s ease}
-    .thumb.loaded{filter:blur(0);transform:scale(1)}
-    .meta{color:rgba(230,230,230,0.7);font-size:13px;margin-bottom:8px}
-    .title{font-weight:700;margin:0 0 6px}
-    .excerpt{color:rgba(230,230,230,0.85);font-size:15px}
-    .pager{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:18px}
-    button{background:var(--accent);color:#111;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
-    button[disabled]{opacity:0.45;cursor:default}
-    .small{font-size:13px;color:rgba(230,230,230,0.75)}
-    .empty{margin-top:18px;text-align:center;color:rgba(230,230,230,0.6)}
-    @media(max-width:760px){.grid{grid-template-columns:1fr} input[type="search"]{width:100%}}
-    a.card{color:inherit;text-decoration:none;display:block}
-  </style>
+  <meta name="description" content="Lista de artigos, pesquisa e filtros do Novo Despertar." />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="icon" href="/favicon.ico" />
 </head>
 <body>
-  <header class="site">
-    <nav class="nav" role="navigation" aria-label="Main navigation">
-      <a class="brand" href="/">Novo Despertar</a>
-      <a href="/index.html" data-nav="index">Início</a>
-      <a href="/artigos.html" data-nav="artigos">Artigos</a>
-      <a href="/temas.html" data-nav="temas">Temas</a>
-      <a href="/sobre.html" data-nav="sobre">Sobre</a>
-      <a id="createLink" href="/admin.html" style="display:none;margin-left:8px">Criar artigo</a>
-      <a href="/admin.html" data-nav="admin" style="margin-left:auto">Admin</a>
-    </nav>
-  </header>
+  <!-- Menu centralizado (partial carregado por /js/menu-loader.js) -->
+  <div id="site-menu"></div>
+  <script src="/js/menu-loader.js" defer></script>
 
-  <main class="wrap" id="main" role="main">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-      <div style="flex:1">
-        <input id="q" type="search" placeholder="Pesquisar título, categoria ou excerto…" aria-label="Pesquisar artigos" />
-      </div>
-      <div>
-        <select id="limit" title="Itens por página" style="padding:8px;border-radius:6px;background:#0b0b0b;color:var(--muted);border:1px solid #222">
-          <option value="6">6 / página</option>
-          <option value="12">12 / página</option>
-          <option value="24">24 / página</option>
+  <main class="container" id="main" role="main">
+    <header class="page-header">
+      <h1>Artigos</h1>
+      <p class="lead">Últimos textos, reflexões e recursos. Pesquisa por título, filtra por tema ou ordena por data.</p>
+    </header>
+
+    <section class="controls" aria-label="Controles de pesquisa e filtro">
+      <form id="search-form" class="search-form" role="search" aria-label="Pesquisar artigos">
+        <label for="q" class="visually-hidden">Pesquisar</label>
+        <input id="q" name="q" type="search" placeholder="Pesquisar artigos..." autocomplete="off" />
+        <button type="submit">Pesquisar</button>
+      </form>
+
+      <div class="filters" aria-hidden="false">
+        <label for="filter-theme" class="visually-hidden">Filtrar por tema</label>
+        <select id="filter-theme" name="tema">
+          <option value="">Todos os temas</option>
+          <option value="espiritualidade">Espiritualidade</option>
+          <option value="saude-mental">Saúde Mental</option>
+          <option value="praticas">Práticas</option>
+          <option value="historia">História</option>
+        </select>
+
+        <label for="sort-by" class="visually-hidden">Ordenar por</label>
+        <select id="sort-by" name="sort">
+          <option value="date_desc">Mais recentes</option>
+          <option value="date_asc">Mais antigos</option>
+          <option value="title_asc">Título A–Z</option>
         </select>
       </div>
-    </div>
+    </section>
 
-    <div id="results" class="grid" aria-live="polite" aria-busy="false"></div>
+    <section id="articles-section" aria-labelledby="articles-heading">
+      <h2 id="articles-heading" class="visually-hidden">Lista de artigos</h2>
 
-    <div class="pager" id="pager" style="display:none" aria-hidden="true">
-      <button id="first">Primeira</button>
-      <button id="prev">Anterior</button>
-      <div class="small" id="pageInfo" aria-live="polite"></div>
-      <button id="next">Seguinte</button>
-      <button id="last">Última</button>
-    </div>
+      <div id="articles-list" class="articles-grid" role="list">
+        <!-- Artigos carregados dinamicamente -->
+      </div>
 
-    <div id="empty" class="empty" style="display:none">Nenhum artigo encontrado.</div>
+      <nav id="pagination" class="pagination" aria-label="Paginação de artigos" hidden>
+        <button id="prev-page" aria-label="Página anterior">Anterior</button>
+        <span id="page-info" aria-live="polite"></span>
+        <button id="next-page" aria-label="Próxima página">Próxima</button>
+      </nav>
+    </section>
   </main>
 
+  <!-- Footer partial -->
+  <div id="site-footer"></div>
   <script>
-    // Placeholder SVG (blur-up)
-    const placeholderSVG = encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200" viewBox="0 0 320 200"><rect width="100%" height="100%" fill="#0b0b0b"/><rect x="16" y="16" width="288" height="168" rx="8" fill="#1a1a1a"/></svg>');
-    const placeholderData = 'data:image/svg+xml;charset=utf-8,' + placeholderSVG;
-
-    // Defensive helpers
-    function safeGetSession(key) { try { return sessionStorage.getItem(key); } catch (e) { return null; } }
-    function safeSetSession(key, val) { try { sessionStorage.setItem(key, val); } catch (e) { /* ignore */ } }
-    function safeRemoveSession(key) { try { sessionStorage.removeItem(key); } catch (e) { /* ignore */ } }
-
-    // Menu: active item + createLink behavior
-    (function initMenu(){
-      const map = {'/':'index','/index.html':'index','/artigos.html':'artigos','/temas.html':'temas','/sobre.html':'sobre','/admin.html':'admin','/artigo-exemplo.html':'artigos'};
-      const navEls = document.querySelectorAll('nav .nav a[data-nav]');
-      const path = location.pathname || '/';
-      const key = map[path] || null;
-      navEls.forEach(a => a.classList.toggle('active', a.getAttribute('data-nav') === key));
-
-      const createLink = document.getElementById('createLink');
+    (async ()=>{
+      const el = document.getElementById('site-footer');
+      if (!el) return;
       try {
-        const token = safeGetSession('nd_token');
-        if (createLink) createLink.style.display = token ? 'inline-block' : 'none';
-
-        if (createLink) {
-          createLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            // set flag so admin opens modal after auth
-            safeSetSession('nd_open_new', '1');
-            // if already on admin page and modal function exists, open immediately
-            if (location.pathname.endsWith('/admin.html')) {
-              try { if (typeof openModalForNew === 'function') { safeRemoveSession('nd_open_new'); openModalForNew(); return; } } catch (err) {}
-            }
-            location.href = createLink.href || '/admin.html';
-          });
-        }
-      } catch (err) {
-        if (createLink) createLink.style.display = 'none';
+        const r = await fetch('/partials/footer.html', { cache: 'no-cache' });
+        if (r.ok) el.innerHTML = await r.text();
+        else el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
+      } catch (e) {
+        el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
       }
     })();
+  </script>
 
-    // API fetch helper
-    async function apiFetch(path) {
-      const res = await fetch(path, { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error('Erro na API');
-      return res.json();
-    }
+  <!-- Script: carregar artigos via API e gerir pesquisa/filtragem -->
+  <script>
+    (function(){
+      const listEl = document.getElementById('articles-list');
+      const form = document.getElementById('search-form');
+      const qInput = document.getElementById('q');
+      const themeSelect = document.getElementById('filter-theme');
+      const sortSelect = document.getElementById('sort-by');
+      const pagination = document.getElementById('pagination');
+      const prevBtn = document.getElementById('prev-page');
+      const nextBtn = document.getElementById('next-page');
+      const pageInfo = document.getElementById('page-info');
 
-    function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+      let page = 1;
+      const perPage = 10;
 
-    // Pagination & state
-    let page = 1;
-    let limit = Number(document.getElementById('limit').value);
-    let query = '';
+      function renderArticleCard(a) {
+        const card = document.createElement('article');
+        card.className = 'article-card';
+        card.setAttribute('role', 'listitem');
 
-    async function load() {
-      const resultsEl = document.getElementById('results');
-      resultsEl.setAttribute('aria-busy', 'true');
-      try {
-        const url = `/api/articles?search=${encodeURIComponent(query)}&page=${page}&limit=${limit}`;
-        const j = await apiFetch(url);
-        render(j);
-      } catch (err) {
-        resultsEl.innerHTML = '<div class="small">Erro ao carregar artigos.</div>';
-        document.getElementById('pager').style.display = 'none';
-        document.getElementById('empty').style.display = 'none';
-      } finally {
-        resultsEl.setAttribute('aria-busy', 'false');
+        const link = document.createElement('a');
+        link.className = 'article-link';
+        link.href = `/artigo-exemplo.html?slug=${encodeURIComponent(a.slug || a.id)}`;
+
+        const thumb = document.createElement('div');
+        thumb.className = 'article-thumb';
+        thumb.setAttribute('aria-hidden', 'true');
+        const img = document.createElement('img');
+        img.loading = 'lazy';
+        img.width = 480;
+        img.height = 320;
+        img.alt = a.imageAlt || '';
+        img.src = a.imageThumbUrl || a.imageUrl || '/assets/articles/default-thumb.jpg';
+        thumb.appendChild(img);
+
+        const body = document.createElement('div');
+        body.className = 'article-body';
+        const h3 = document.createElement('h3');
+        h3.className = 'article-title';
+        h3.textContent = a.title || 'Sem título';
+        const p = document.createElement('p');
+        p.className = 'article-excerpt';
+        p.textContent = a.excerpt || '';
+        const time = document.createElement('time');
+        time.className = 'article-date';
+        if (a.date) {
+          time.dateTime = a.date;
+          time.textContent = new Date(a.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        body.appendChild(h3);
+        body.appendChild(p);
+        body.appendChild(time);
+
+        link.appendChild(thumb);
+        link.appendChild(body);
+        card.appendChild(link);
+        return card;
       }
-    }
 
-    function render(data) {
-      const list = data.results || [];
-      const meta = data.meta || { total: 0, page: 1, pages: 1, limit };
-      const container = document.getElementById('results');
-
-      if (!list.length) {
-        container.innerHTML = '';
-        document.getElementById('empty').style.display = 'block';
-      } else {
-        document.getElementById('empty').style.display = 'none';
-        container.innerHTML = list.map(a => {
-          const thumb = a.imageThumbUrl || a.imageUrl || '';
-          const thumbSrc = thumb ? escapeHtml(thumb) : placeholderData;
-          const alt = escapeHtml(a.title || 'Imagem do artigo');
-          return `
-            <a class="card" href="/artigo-exemplo.html?slug=${encodeURIComponent(a.slug)}" aria-label="${escapeHtml(a.title)}">
-              ${thumb ? `<img data-src="${thumbSrc}" src="${placeholderData}" class="thumb" alt="${alt}" loading="lazy" decoding="async">` : `<img src="${placeholderData}" class="thumb" alt="${alt}" loading="lazy" decoding="async">`}
-              <div class="meta">${new Date(a.date).toLocaleDateString('pt-PT')} · ${escapeHtml(a.category || '')}</div>
-              <div class="title">${escapeHtml(a.title)}</div>
-              <div class="excerpt">${escapeHtml((a.excerpt || a.content || '').slice(0, 260))}</div>
-            </a>
-          `;
-        }).join('');
+      async function fetchArticles({ q='', tema='', sort='date_desc', page=1, perPage=10 } = {}) {
+        // API contract: GET /api/articles?q=&tema=&sort=&page=&perPage=
+        const params = new URLSearchParams();
+        if (q) params.set('q', q);
+        if (tema) params.set('tema', tema);
+        if (sort) params.set('sort', sort);
+        params.set('page', String(page));
+        params.set('perPage', String(perPage));
+        const url = '/api/articles?' + params.toString();
+        try {
+          const res = await fetch(url, { cache: 'no-cache' });
+          if (!res.ok) {
+            const txt = await res.text();
+            listEl.innerHTML = `<p class="error">Erro ao carregar artigos: ${txt}</p>`;
+            pagination.hidden = true;
+            return { items: [], total: 0 };
+          }
+          const json = await res.json();
+          // Expecting { items: [...], total: number }
+          return json;
+        } catch (err) {
+          listEl.innerHTML = '<p class="error">Erro de rede ao carregar artigos.</p>';
+          pagination.hidden = true;
+          return { items: [], total: 0 };
+        }
       }
 
-      // pager UI
-      document.getElementById('pager').style.display = meta.total > meta.limit ? 'flex' : 'none';
-      document.getElementById('pageInfo').textContent = `Página ${meta.page} de ${meta.pages} — ${meta.total} artigo(s)`;
-      document.getElementById('prev').disabled = meta.page <= 1;
-      document.getElementById('first').disabled = meta.page <= 1;
-      document.getElementById('next').disabled = meta.page >= meta.pages;
-      document.getElementById('last').disabled = meta.page >= meta.pages;
+      async function loadAndRender() {
+        listEl.innerHTML = '<p class="loading">A carregar artigos…</p>';
+        const q = qInput.value.trim();
+        const tema = themeSelect.value;
+        const sort = sortSelect.value;
+        const data = await fetchArticles({ q, tema, sort, page, perPage });
+        listEl.innerHTML = '';
+        if (!data.items || data.items.length === 0) {
+          listEl.innerHTML = '<p class="empty">Nenhum artigo encontrado.</p>';
+          pagination.hidden = true;
+          return;
+        }
+        data.items.forEach(a => listEl.appendChild(renderArticleCard(a)));
+        // pagination
+        const total = Number(data.total || data.items.length);
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        pageInfo.textContent = `Página ${page} de ${totalPages}`;
+        prevBtn.disabled = page <= 1;
+        nextBtn.disabled = page >= totalPages;
+        pagination.hidden = false;
+      }
 
-      // non-blocking image swap (blur-up)
-      requestAnimationFrame(() => {
-        document.querySelectorAll('img[data-src]').forEach(img => {
-          const real = img.getAttribute('data-src');
-          const loader = new Image();
-          loader.src = real;
-          loader.onload = () => { img.src = real; img.classList.add('loaded'); img.removeAttribute('data-src'); };
-          loader.onerror = () => { img.classList.add('loaded'); img.removeAttribute('data-src'); };
-        });
+      form.addEventListener('submit', (ev) => {
+        ev.preventDefault();
+        page = 1;
+        loadAndRender();
       });
-    }
 
-    // Controls
-    document.getElementById('q').addEventListener('input', (e) => {
-      query = e.target.value;
-      page = 1;
-      debounceLoad();
-    });
+      themeSelect.addEventListener('change', () => { page = 1; loadAndRender(); });
+      sortSelect.addEventListener('change', () => { page = 1; loadAndRender(); });
 
-    document.getElementById('limit').addEventListener('change', (e) => {
-      limit = Number(e.target.value);
-      page = 1;
-      load();
-    });
+      prevBtn.addEventListener('click', () => { if (page > 1) { page--; loadAndRender(); } });
+      nextBtn.addEventListener('click', () => { page++; loadAndRender(); });
 
-    document.getElementById('prev').addEventListener('click', () => { if (page>1) { page--; load(); } });
-    document.getElementById('next').addEventListener('click', () => { page++; load(); });
-    document.getElementById('first').addEventListener('click', () => { page = 1; load(); });
-    document.getElementById('last').addEventListener('click', async () => {
-      try {
-        const j = await apiFetch(`/api/articles?search=${encodeURIComponent(query)}&page=1&limit=${limit}`);
-        const pages = j.meta ? j.meta.pages : 1;
-        page = pages;
-        load();
-      } catch (err) { /* ignore */ }
-    });
-
-    let debounceTimer = null;
-    function debounceLoad() {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(load, 350);
-    }
-
-    // initial load
-    load();
+      // initial load
+      loadAndRender();
+    })();
   </script>
 </body>
 </html>

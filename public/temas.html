@@ -1,174 +1,121 @@
-<!--
-  public/temas.html
-  Alterações aplicadas:
-  - Barra de navegação consistente (Início, Artigos, Temas, Sobre, Admin) com destaque automático do item ativo.
-  - Link "Criar artigo" visível apenas quando autenticado (sessionStorage.nd_token); ao clicar define flag segura e navega para /admin.html para abrir o modal automaticamente.
-  - Layout responsivo em grelha para temas; acessibilidade básica (roles, aria-live, aria-label).
-  - Scripts defensivos para ambientes sem sessionStorage; comportamento não bloqueante.
--->
-<!DOCTYPE html>
-<html lang="pt">
+<!doctype html>
+<html lang="pt-PT">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Temas — Novo Despertar</title>
-  <style>
-    :root{
-      --bg:#0e0e0f; --panel:#111; --muted:#e6e6e6; --accent:#c9a86a;
-      --card:#0b0b0b; --maxw:980px; --radius:10px; --gap:16px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased}
-    header.site{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #222;z-index:40}
-    .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:12px}
-    .brand{font-weight:700;color:var(--accent);text-decoration:none}
-    .nav a{color:var(--muted);text-decoration:none;padding:6px 8px;border-radius:6px}
-    .nav a.active{background:#0b0b0b}
-    .wrap{max-width:var(--maxw);margin:28px auto;padding:20px}
-    h1{margin:0 0 8px;font-size:28px}
-    .lead{color:rgba(230,230,230,0.9);margin-bottom:14px}
-    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap);margin-top:18px}
-    .tile{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:16px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.02);min-height:110px;display:flex;flex-direction:column;justify-content:space-between}
-    .tile h3{margin:0 0 8px;font-size:18px}
-    .tile p{margin:0;color:rgba(230,230,230,0.78);font-size:14px;line-height:1.45}
-    .tile a{margin-top:12px;color:var(--accent);text-decoration:none;font-weight:600}
-    .searchRow{display:flex;gap:12px;align-items:center;margin-top:12px}
-    input[type="search"]{flex:1;padding:10px;border-radius:8px;border:1px solid #222;background:var(--card);color:var(--muted)}
-    .small{font-size:13px;color:rgba(230,230,230,0.75)}
-    footer{border-top:1px solid #222;padding:22px 20px;text-align:center;color:rgba(230,230,230,0.65);margin-top:36px}
-    @media(max-width:980px){.grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:560px){.grid{grid-template-columns:1fr}.nav{padding:10px}.wrap{padding:16px}}
-  </style>
+  <meta name="description" content="Lista de temas e categorias do site Novo Despertar." />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="icon" href="/favicon.ico" />
 </head>
 <body>
-  <header class="site" role="banner">
-    <nav class="nav" role="navigation" aria-label="Main navigation">
-      <a class="brand" href="/" data-nav="index">Novo Despertar</a>
-      <a href="/index.html" data-nav="index">Início</a>
-      <a href="/artigos.html" data-nav="artigos">Artigos</a>
-      <a href="/temas.html" data-nav="temas">Temas</a>
-      <a href="/sobre.html" data-nav="sobre">Sobre</a>
-      <a id="createLink" href="/admin.html" style="display:none;margin-left:8px">Criar artigo</a>
-      <a href="/admin.html" data-nav="admin" style="margin-left:auto">Admin</a>
-    </nav>
-  </header>
+  <!-- Menu centralizado (partial carregado por /js/menu-loader.js) -->
+  <div id="site-menu"></div>
+  <script src="/js/menu-loader.js" defer></script>
 
-  <main class="wrap" role="main" aria-labelledby="pageTitle">
-    <h1 id="pageTitle">Temas</h1>
-    <p class="lead">Agrupamentos de artigos por assunto para facilitar a leitura e o estudo. Clica num tema para ver artigos relacionados.</p>
+  <main class="container" id="main" role="main">
+    <header class="page-header">
+      <h1>Temas</h1>
+      <p class="lead">Explora os temas e categorias onde publicamos artigos, reflexões e recursos.</p>
+    </header>
 
-    <div class="searchRow" role="search" aria-label="Pesquisar temas">
-      <input id="q" type="search" placeholder="Pesquisar temas…" aria-label="Pesquisar temas" />
-      <div class="small" id="searchHint">Pesquisa por palavra-chave</div>
-    </div>
+    <section id="themes-list" aria-labelledby="themes-heading">
+      <h2 id="themes-heading" class="visually-hidden">Lista de temas</h2>
 
-    <section class="grid" id="themesGrid" aria-live="polite">
-      <article class="tile" data-slug="consciencia" role="article" aria-labelledby="t1">
-        <div>
-          <h3 id="t1">Consciência</h3>
-          <p>Práticas, reflexões e estudos sobre estados de consciência, atenção e presença.</p>
-        </div>
-        <a href="/artigos.html?topic=consciência" aria-label="Ver artigos sobre Consciência">Ver artigos</a>
-      </article>
+      <ul class="themes-grid" role="list">
+        <li class="theme-card" role="listitem">
+          <a href="/artigos.html?tema=espiritualidade" class="theme-link" aria-labelledby="t-espiritualidade">
+            <div class="theme-thumb" aria-hidden="true">
+              <img src="/assets/themes/espiritualidade.jpg" alt="" loading="lazy" width="480" height="320" />
+            </div>
+            <div class="theme-body">
+              <h3 id="t-espiritualidade" class="theme-title">Espiritualidade</h3>
+              <p class="theme-excerpt">Reflexões, práticas e textos para o crescimento interior.</p>
+            </div>
+          </a>
+        </li>
 
-      <article class="tile" data-slug="meditacao" role="article" aria-labelledby="t2">
-        <div>
-          <h3 id="t2">Meditação</h3>
-          <p>Técnicas, guias passo a passo e experiências pessoais para integrar a meditação na rotina.</p>
-        </div>
-        <a href="/artigos.html?topic=meditação" aria-label="Ver artigos sobre Meditação">Ver artigos</a>
-      </article>
+        <li class="theme-card" role="listitem">
+          <a href="/artigos.html?tema=saude-mental" class="theme-link" aria-labelledby="t-saude-mental">
+            <div class="theme-thumb" aria-hidden="true">
+              <img src="/assets/themes/saude-mental.jpg" alt="" loading="lazy" width="480" height="320" />
+            </div>
+            <div class="theme-body">
+              <h3 id="t-saude-mental" class="theme-title">Saúde Mental</h3>
+              <p class="theme-excerpt">Estratégias, entrevistas e recursos para bem-estar emocional.</p>
+            </div>
+          </a>
+        </li>
 
-      <article class="tile" data-slug="saude-integral" role="article" aria-labelledby="t3">
-        <div>
-          <h3 id="t3">Saúde Integral</h3>
-          <p>Corpo, mente e nutrição: práticas e informação para bem‑estar holístico.</p>
-        </div>
-        <a href="/artigos.html?topic=saude-integral" aria-label="Ver artigos sobre Saúde Integral">Ver artigos</a>
-      </article>
+        <li class="theme-card" role="listitem">
+          <a href="/artigos.html?tema=praticas" class="theme-link" aria-labelledby="t-praticas">
+            <div class="theme-thumb" aria-hidden="true">
+              <img src="/assets/themes/praticas.jpg" alt="" loading="lazy" width="480" height="320" />
+            </div>
+            <div class="theme-body">
+              <h3 id="t-praticas" class="theme-title">Práticas</h3>
+              <p class="theme-excerpt">Exercícios, meditações e rotinas para aplicar no dia a dia.</p>
+            </div>
+          </a>
+        </li>
 
-      <article class="tile" data-slug="filosofia" role="article" aria-labelledby="t4">
-        <div>
-          <h3 id="t4">Filosofia</h3>
-          <p>Ensaios e textos que exploram ideias, ética e perspectivas sobre a vida.</p>
-        </div>
-        <a href="/artigos.html?topic=filosofia" aria-label="Ver artigos sobre Filosofia">Ver artigos</a>
-      </article>
-
-      <article class="tile" data-slug="praticas" role="article" aria-labelledby="t5">
-        <div>
-          <h3 id="t5">Práticas</h3>
-          <p>Exercícios, rotinas e propostas práticas para aplicar no dia a dia.</p>
-        </div>
-        <a href="/artigos.html?topic=praticas" aria-label="Ver artigos sobre Práticas">Ver artigos</a>
-      </article>
-
-      <article class="tile" data-slug="recursos" role="article" aria-labelledby="t6">
-        <div>
-          <h3 id="t6">Recursos</h3>
-          <p>Livros, podcasts, referências e ferramentas recomendadas para aprofundar os temas.</p>
-        </div>
-        <a href="/artigos.html?topic=recursos" aria-label="Ver artigos sobre Recursos">Ver artigos</a>
-      </article>
+        <li class="theme-card" role="listitem">
+          <a href="/artigos.html?tema=historia" class="theme-link" aria-labelledby="t-historia">
+            <div class="theme-thumb" aria-hidden="true">
+              <img src="/assets/themes/historia.jpg" alt="" loading="lazy" width="480" height="320" />
+            </div>
+            <div class="theme-body">
+              <h3 id="t-historia" class="theme-title">História</h3>
+              <p class="theme-excerpt">Contexto e histórias que inspiram a nossa jornada.</p>
+            </div>
+          </a>
+        </li>
+      </ul>
     </section>
+
+    <aside class="sidebar" aria-label="Complementos">
+      <section class="subscribe">
+        <h4>Subscrever</h4>
+        <p>Recebe novidades por email sobre novos artigos e eventos.</p>
+        <form id="subscribe-form" action="/api/subscribe" method="post" novalidate>
+          <label for="subscribe-email" class="visually-hidden">Email</label>
+          <input id="subscribe-email" name="email" type="email" placeholder="o teu email" required />
+          <button type="submit">Subscrever</button>
+        </form>
+      </section>
+    </aside>
   </main>
 
-  <footer role="contentinfo">© Novo Despertar — 2026</footer>
-
+  <!-- Footer partial -->
+  <div id="site-footer"></div>
   <script>
-    // Defensive sessionStorage helpers
-    function safeGet(key){ try { return sessionStorage.getItem(key); } catch (e) { return null; } }
-    function safeSet(key, val){ try { sessionStorage.setItem(key, val); } catch (e) { /* ignore */ } }
-    function safeRemove(key){ try { sessionStorage.removeItem(key); } catch (e) { /* ignore */ } }
-
-    // Menu init: highlight active item and show "Criar artigo" when authenticated
-    (function initMenu(){
-      const map = {
-        '/': 'index','/index.html':'index','/artigos.html':'artigos',
-        '/temas.html':'temas','/sobre.html':'sobre','/admin.html':'admin',
-        '/artigo-exemplo.html':'artigos'
-      };
-      const navEls = document.querySelectorAll('nav a[data-nav]');
-      const path = location.pathname || '/';
-      const key = map[path] || null;
-      navEls.forEach(a => a.classList.toggle('active', a.getAttribute('data-nav') === key));
-
-      const createLink = document.getElementById('createLink');
+    (async ()=>{
+      const el = document.getElementById('site-footer');
+      if (!el) return;
       try {
-        const token = safeGet('nd_token');
-        if (createLink) createLink.style.display = token ? 'inline-block' : 'none';
-
-        if (createLink) {
-          createLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            // set flag so admin opens modal after auth
-            safeSet('nd_open_new', '1');
-            // if already on admin page and modal function exists, open without navigation
-            if (location.pathname.endsWith('/admin.html')) {
-              try { if (typeof openModalForNew === 'function') { safeRemove('nd_open_new'); openModalForNew(); return; } } catch (err) {}
-            }
-            location.href = createLink.href || '/admin.html';
-          });
-        }
-      } catch (err) {
-        if (createLink) createLink.style.display = 'none';
+        const r = await fetch('/partials/footer.html', { cache: 'no-cache' });
+        if (r.ok) el.innerHTML = await r.text();
+        else el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
+      } catch (e) {
+        el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
       }
     })();
+  </script>
 
-    // Simple client-side filter for themes (instant UX)
-    (function themesFilter(){
-      const input = document.getElementById('q');
-      const tiles = Array.from(document.querySelectorAll('#themesGrid .tile'));
-      if (!input) return;
-      input.addEventListener('input', () => {
-        const v = input.value.trim().toLowerCase();
-        tiles.forEach(t => {
-          const title = (t.querySelector('h3')?.textContent || '').toLowerCase();
-          const desc = (t.querySelector('p')?.textContent || '').toLowerCase();
-          const match = !v || title.includes(v) || desc.includes(v);
-          t.style.display = match ? '' : 'none';
-        });
+  <!-- Interações locais -->
+  <script>
+    (function(){
+      const form = document.getElementById('subscribe-form');
+      if (!form) return;
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const email = form.email.value.trim();
+        if (!email) return alert('Introduz um email válido.');
+        try {
+          const res = await fetch(form.action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+          if (res.ok) { alert('Obrigado — subscrito!'); form.reset(); }
+          else { alert('Erro ao subscrever.'); }
+        } catch (err) { alert('Erro de rede.'); }
       });
     })();
   </script>

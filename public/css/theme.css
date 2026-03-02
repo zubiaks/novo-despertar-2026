@@ -1,0 +1,45 @@
+:root{
+  --color-bg:#F8FAFC;
+  --color-text:#0F1724;
+  --color-primary:#2B6CB0;
+  --color-secondary:#F6AD55;
+  --radius:8px;
+  --card-shadow: 0 6px 18px rgba(15,23,36,0.06);
+  --max-width:1100px;
+  --gap:1.25rem;
+  --base-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --serif-font: "Source Serif 4", Georgia, serif;
+}
+
+html,body{height:100%;background:var(--color-bg);color:var(--color-text);font-family:var(--base-font);line-height:1.5;margin:0}
+.container{max-width:var(--max-width);margin:0 auto;padding:1.5rem}
+.site-nav{display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;background:rgba(255,255,255,0.9);backdrop-filter:blur(6px);border-bottom:1px solid rgba(15,23,36,0.04)}
+.site-nav .brand{font-weight:700;color:var(--color-primary);text-decoration:none}
+.nav-links{display:flex;gap:1rem;list-style:none;padding:0;margin:0}
+.nav-links a{color:var(--color-text);text-decoration:none;padding:0.35rem 0.5rem;border-radius:6px}
+.nav-links a.active, .nav-links a:hover{background:rgba(43,108,176,0.08);color:var(--color-primary)}
+
+.hero{padding:3rem 0;text-align:center}
+.hero-title{font-family:var(--serif-font);font-size:2.25rem;margin:0 0 0.5rem}
+.hero-lead{color:#475569;margin:0 0 1rem}
+
+.articles-grid, .themes-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:var(--gap);padding:0;margin:0;list-style:none}
+.article-card, .theme-card{background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--card-shadow);transition:transform .18s ease,box-shadow .18s ease}
+.article-card:hover, .theme-card:hover{transform:translateY(-6px);box-shadow:0 12px 30px rgba(15,23,36,0.12)}
+.article-thumb img{display:block;width:100%;height:auto}
+.article-body{padding:1rem}
+.article-title{margin:0 0 0.5rem;font-weight:600}
+.article-excerpt{margin:0;color:#475569}
+
+.btn{display:inline-block;padding:0.6rem 1rem;border-radius:8px;background:var(--color-primary);color:#fff;text-decoration:none;border:none;cursor:pointer}
+.btn-outline{background:transparent;border:1px solid rgba(15,23,36,0.06);color:var(--color-text)}
+
+.sidebar{margin-top:2rem}
+.site-footer{background:#0f1724;color:#fff;padding:2rem 0;margin-top:3rem}
+.site-footer a{color:var(--color-secondary)}
+
+@media (max-width:720px){
+  .nav-links{display:none}
+  .site-nav.open .nav-links{display:flex;flex-direction:column;position:absolute;left:0;right:0;top:56px;background:#fff;padding:1rem}
+  .hero-title{font-size:1.6rem}
+}
