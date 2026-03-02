@@ -1,108 +1,100 @@
-<!--
-  public/index.html
-  Alterações principais:
-  - Barra de navegação consistente com Início, Artigos, Temas, Sobre, Admin.
-  - Link "Criar artigo" visível apenas quando autenticado; ao clicar define flag segura em sessionStorage e navega para /admin.html para abrir o modal automaticamente.
-  - Destaque automático do item de menu ativo.
-  - Scripts defensivos (try/catch) para ambientes sem sessionStorage.
-  - Pequenas melhorias de acessibilidade (aria-labels, role).
--->
-<!DOCTYPE html>
-<html lang="pt">
+<!doctype html>
+<html lang="pt-PT">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Novo Despertar — Início</title>
-  <style>
-    :root{--bg:#0e0e0f;--panel:#111;--muted:#e6e6e6;--accent:#c9a86a;--maxw:980px;--radius:8px}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:Georgia,serif;background:var(--bg);color:var(--muted);-webkit-font-smoothing:antialiased}
-    header.site{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #222;z-index:40}
-    .nav{max-width:var(--maxw);margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:16px}
-    .brand{font-weight:700;color:var(--accent);text-decoration:none}
-    .nav a{color:var(--muted);text-decoration:none;padding:6px 8px;border-radius:6px}
-    .nav a.active{background:#0b0b0b}
-    .wrap{max-width:var(--maxw);margin:28px auto;padding:20px}
-    h1{margin:0 0 12px}
-    .lead{color:rgba(230,230,230,0.9);font-size:18px;line-height:1.6}
-    .cards{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px}
-    .card{background:rgba(255,255,255,0.02);padding:16px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.02)}
-    a.cta{display:inline-block;margin-top:12px;padding:8px 12px;border-radius:6px;background:var(--accent);color:#111;text-decoration:none}
-    .small{font-size:13px;color:rgba(230,230,230,0.75)}
-    @media(max-width:760px){.cards{grid-template-columns:1fr}}
-  </style>
+  <meta name="description" content="Artigos, práticas e recursos para crescimento pessoal e comunitário." />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="icon" href="/favicon.ico" />
 </head>
 <body>
-  <header class="site" role="banner">
-    <nav class="nav" role="navigation" aria-label="Main navigation">
-      <a class="brand" href="/" data-nav="index">Novo Despertar</a>
-      <a href="/index.html" data-nav="index">Início</a>
-      <a href="/artigos.html" data-nav="artigos">Artigos</a>
-      <a href="/temas.html" data-nav="temas">Temas</a>
-      <a href="/sobre.html" data-nav="sobre">Sobre</a>
-      <a id="createLink" href="/admin.html" style="display:none;margin-left:8px">Criar artigo</a>
-      <a href="/admin.html" data-nav="admin" style="margin-left:auto">Admin</a>
-    </nav>
-  </header>
+  <!-- Menu centralizado (partial carregado por /js/menu-loader.js) -->
+  <div id="site-menu"></div>
+  <script src="/js/menu-loader.js" defer></script>
 
-  <main class="wrap" role="main">
-    <h1>Bem‑vindo ao Novo Despertar</h1>
-    <p class="lead">Espaço dedicado a textos, reflexões e recursos sobre consciência, práticas e temas que nos ajudam a despertar. Navega pelos artigos, explora os temas e usa a área administrativa para publicar novos conteúdos.</p>
-
-    <div class="cards" role="region" aria-label="Ações rápidas">
-      <div class="card" role="article">
-        <strong>Últimos artigos</strong>
-        <p class="small" style="margin-top:8px">Ver a lista completa de artigos publicados.</p>
-        <a class="cta" href="/artigos.html">Ver artigos</a>
+  <main class="container" id="main" role="main">
+    <header class="hero">
+      <div class="hero-inner">
+        <h1 class="hero-title">Novo Despertar</h1>
+        <p class="hero-lead">Textos, práticas e recursos para viver com mais presença e sentido.</p>
+        <p class="hero-cta">
+          <a class="btn" href="/artigos.html">Ver artigos</a>
+          <a class="btn btn-outline" href="/temas.html">Explorar temas</a>
+        </p>
       </div>
+    </header>
 
-      <div class="card" role="article">
-        <strong>Temas</strong>
-        <p class="small" style="margin-top:8px">Agrupamentos por categoria para facilitar a leitura e estudo.</p>
-        <a class="cta" href="/temas.html">Explorar temas</a>
-      </div>
-    </div>
+    <section class="latest-articles" aria-labelledby="latest-heading">
+      <h2 id="latest-heading">Últimos artigos</h2>
+      <ul class="articles-grid" role="list" id="latest-list">
+        <!-- Espaço preenchido dinamicamente ou manualmente com cartões de artigo -->
+        <li class="article-card" role="listitem">
+          <a href="/artigo-exemplo.html?slug=exemplo" class="article-link">
+            <div class="article-thumb" aria-hidden="true">
+              <img src="/assets/articles/exemplo-thumb.jpg" alt="" loading="lazy" width="480" height="320" />
+            </div>
+            <div class="article-body">
+              <h3 class="article-title">Título de exemplo</h3>
+              <p class="article-excerpt">Resumo curto do artigo para despertar interesse e leitura.</p>
+              <time datetime="2026-03-01" class="article-date">1 Março 2026</time>
+            </div>
+          </a>
+        </li>
+      </ul>
+      <p class="more"><a href="/artigos.html">Ver todos os artigos</a></p>
+    </section>
+
+    <section class="featured-themes" aria-labelledby="themes-heading">
+      <h2 id="themes-heading">Temas em destaque</h2>
+      <ul class="themes-inline" role="list">
+        <li role="listitem"><a href="/temas.html?tema=espiritualidade">Espiritualidade</a></li>
+        <li role="listitem"><a href="/temas.html?tema=saude-mental">Saúde Mental</a></li>
+        <li role="listitem"><a href="/temas.html?tema=praticas">Práticas</a></li>
+      </ul>
+    </section>
+
+    <aside class="newsletter" aria-labelledby="newsletter-heading">
+      <h2 id="newsletter-heading">Recebe novidades</h2>
+      <form id="subscribe-form" action="/api/subscribe" method="post" novalidate>
+        <label for="subscribe-email" class="visually-hidden">Email</label>
+        <input id="subscribe-email" name="email" type="email" placeholder="o teu email" required />
+        <button type="submit">Subscrever</button>
+      </form>
+    </aside>
   </main>
 
+  <!-- Footer partial -->
+  <div id="site-footer"></div>
   <script>
-    // Defensive sessionStorage helpers
-    function safeGet(key){ try { return sessionStorage.getItem(key); } catch (e) { return null; } }
-    function safeSet(key, val){ try { sessionStorage.setItem(key, val); } catch (e) { /* ignore */ } }
-    function safeRemove(key){ try { sessionStorage.removeItem(key); } catch (e) { /* ignore */ } }
-
-    // Menu: highlight active item and show "Criar artigo" when authenticated.
-    (function initMenu(){
-      const map = {
-        '/': 'index','/index.html':'index','/artigos.html':'artigos',
-        '/temas.html':'temas','/sobre.html':'sobre','/admin.html':'admin',
-        '/artigo-exemplo.html':'artigos'
-      };
-      const path = location.pathname || '/';
-      const key = map[path] || null;
-      document.querySelectorAll('nav a[data-nav]').forEach(a => {
-        a.classList.toggle('active', a.getAttribute('data-nav') === key);
-      });
-
-      const createLink = document.getElementById('createLink');
+    (async ()=>{
+      const el = document.getElementById('site-footer');
+      if (!el) return;
       try {
-        const token = safeGet('nd_token');
-        if (createLink) createLink.style.display = token ? 'inline-block' : 'none';
-
-        if (createLink) {
-          createLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            // set flag so admin opens modal after auth
-            safeSet('nd_open_new', '1');
-            // if already on admin page and modal function exists, open without navigation
-            if (location.pathname.endsWith('/admin.html')) {
-              try { if (typeof openModalForNew === 'function') { safeRemove('nd_open_new'); openModalForNew(); return; } } catch (err) {}
-            }
-            location.href = createLink.href || '/admin.html';
-          });
-        }
-      } catch (err) {
-        if (createLink) createLink.style.display = 'none';
+        const r = await fetch('/partials/footer.html', { cache: 'no-cache' });
+        if (r.ok) el.innerHTML = await r.text();
+        else el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
+      } catch (e) {
+        el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
       }
+    })();
+  </script>
+
+  <!-- Interações locais -->
+  <script>
+    (function(){
+      const form = document.getElementById('subscribe-form');
+      if (!form) return;
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const email = form.email.value.trim();
+        if (!email) return alert('Introduz um email válido.');
+        try {
+          const res = await fetch(form.action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+          if (res.ok) { alert('Obrigado — subscrito!'); form.reset(); }
+          else { alert('Erro ao subscrever.'); }
+        } catch (err) { alert('Erro de rede.'); }
+      });
     })();
   </script>
 </body>
