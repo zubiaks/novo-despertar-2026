@@ -1,6 +1,36 @@
-<footer class="site-footer" role="contentinfo">
-  <div class="container">
-    <p>&copy; Novo Despertar — <span id="year"></span></p>
+<footer class="site-footer" role="contentinfo" aria-label="Rodapé do site">
+  <div class="container" style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;justify-content:space-between">
+    <div style="min-width:220px;flex:1 1 320px">
+      <a class="brand" href="/" aria-label="Novo Despertar — Início" style="color:inherit;text-decoration:none;font-weight:700">Novo Despertar</a>
+      <p style="margin:0.5rem 0 0;color:var(--muted)">Textos e práticas para viver com presença. © Novo Despertar — <span id="nd-year">2026</span></p>
+    </div>
+
+    <nav aria-label="Links úteis" style="flex:0 1 320px">
+      <ul style="list-style:none;padding:0;margin:0;display:flex;gap:0.75rem;flex-wrap:wrap">
+        <li><a href="/artigos.html" style="color:inherit;text-decoration:none">Artigos</a></li>
+        <li><a href="/temas.html" style="color:inherit;text-decoration:none">Temas</a></li>
+        <li><a href="/sobre.html" style="color:inherit;text-decoration:none">Sobre</a></li>
+        <li><a href="/admin.html" style="color:inherit;text-decoration:none">Admin</a></li>
+      </ul>
+    </nav>
+
+    <div style="flex:0 1 260px;min-width:220px">
+      <h4 style="margin:0 0 0.5rem">Contacto</h4>
+      <p style="margin:0;color:var(--muted)"><a href="mailto:info@novodespertar.example" style="color:inherit;text-decoration:none">info@novodespertar.example</a></p>
+      <p style="margin:0.5rem 0 0;font-size:0.9rem;color:var(--muted)">Segue-nos</p>
+      <div style="display:flex;gap:0.5rem;margin-top:0.5rem">
+        <a href="#" aria-label="Instagram" style="text-decoration:none;color:inherit">Instagram</a>
+        <a href="#" aria-label="Facebook" style="text-decoration:none;color:inherit">Facebook</a>
+      </div>
+    </div>
   </div>
-  <script>document.getElementById('year')?.appendChild(document.createTextNode(new Date().getFullYear()));</script>
 </footer>
+<script>
+  // Atualiza o ano dinamicamente sem depender de script inline no partial original
+  (function () {
+    try {
+      const el = document.getElementById('nd-year');
+      if (el) el.textContent = new Date().getFullYear();
+    } catch (e) { /* silencioso */ }
+  })();
+</script>
