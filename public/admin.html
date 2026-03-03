@@ -4,243 +4,538 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Admin — Novo Despertar</title>
-  <meta name="description" content="Painel de administração — criar e editar artigos." />
-  <link rel="stylesheet" href="/css/styles.css" />
+  <meta name="description" content="Área administrativa do Novo Despertar — criar e gerir artigos." />
+  <link rel="stylesheet" href="/css/theme.css?v=1" />
   <link rel="icon" href="/favicon.ico" />
+  <style>
+    /* Modal / preview shared styles (aproveita classes existentes) */
+    .preview-modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000}
+    .preview-inner{background:#fff;padding:1rem;border-radius:8px;max-width:900px;width:95%;max-height:90vh;overflow:auto}
+    .preview-inner .close-row{display:flex;justify-content:flex-end}
+    .preview-inner h1{margin-top:0}
+    .preview-modal[hidden] { display: none !important; }
+  </style>
 </head>
 <body>
-  <!-- Menu centralizado -->
   <div id="site-menu"></div>
   <script src="/js/menu-loader.js" defer></script>
+  <script src="/js/toasts.js" defer></script>
 
   <main class="container" id="main" role="main">
     <header class="page-header">
-      <h1>Admin</h1>
-      <p class="lead">Criar novo artigo ou editar existentes.</p>
+      <h1>Administração</h1>
+      <p class="lead">Criar, editar e gerir artigos. Acesso restrito — inicia sessão para continuar.</p>
     </header>
 
-    <section class="admin-actions">
-      <button id="btn-new" class="btn">Novo artigo</button>
-    </section>
+    <!-- Login area (kept for fallback; primary login is via menu modal) -->
+    <section id="auth-section" aria-labelledby="auth-heading" style="margin-bottom:1.25rem">
+      <h2 id="auth-heading" class="visually-hidden">Autenticação</h2>
 
-    <!-- Modal / Formulário de criação -->
-    <div id="modal" class="modal" hidden>
-      <div class="modal-inner" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-        <header>
-          <h2 id="modal-title">Novo artigo</h2>
-          <button id="modal-close" class="btn-link" aria-label="Fechar">✕</button>
-        </header>
-
-        <form id="article-form">
-          <label for="title">Título</label>
-          <input id="title" name="title" type="text" required />
-
-          <label for="date">Data</label>
-          <input id="date" name="date" type="date" required />
-
-          <label for="excerpt">Resumo</label>
-          <textarea id="excerpt" name="excerpt" rows="3"></textarea>
-
-          <label for="content">Conteúdo (HTML)</label>
-          <textarea id="content" name="content" rows="10" required></textarea>
-
-          <label for="imageInput">Imagem principal</label>
-          <input id="imageInput" name="image" type="file" accept="image/*" />
-
-          <div class="modal-actions">
-            <button id="save-article" type="submit" class="btn">Guardar</button>
-            <button id="cancel-article" type="button" class="btn btn-outline">Cancelar</button>
+      <div id="login-box" style="max-width:520px;background:#fff;padding:1rem;border-radius:8px;box-shadow:var(--card-shadow);">
+        <form id="login-form" action="/api/login" method="post" novalidate>
+          <label for="login-token" class="visually-hidden">Token</label>
+          <input id="login-token" name="token" type="password" placeholder="Insere o token de administração" style="width:100%;padding:0.6rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid rgba(15,23,36,0.06)" />
+          <div style="display:flex;gap:0.5rem">
+            <button id="login-btn" class="btn" type="submit">Entrar</button>
+            <button id="logout-btn" class="btn btn-outline" type="button" style="display:none">Logout</button>
           </div>
-
-          <div id="modal-msg" role="status" aria-live="polite"></div>
         </form>
       </div>
-    </div>
+    </section>
 
-    <!-- Lista simples de artigos (pode ser preenchida dinamicamente) -->
-    <section id="admin-list" class="admin-list">
-      <h2>Artigos</h2>
-      <div id="articles-admin"></div>
+    <section id="admin-actions" aria-labelledby="admin-actions-heading" style="margin-top:1.5rem;display:none">
+      <h2 id="admin-actions-heading">Gestão de artigos</h2>
+
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:1rem;align-items:start">
+        <div style="background:#fff;padding:1rem;border-radius:8px;box-shadow:var(--card-shadow)">
+          <form id="article-form" action="/api/articles" method="post" enctype="multipart/form-data" novalidate>
+            <label for="article-title" class="visually-hidden">Título</label>
+            <input id="article-title" name="title" type="text" placeholder="Título do artigo" required style="width:100%;padding:0.6rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid rgba(15,23,36,0.06)" />
+
+            <label for="article-theme" class="visually-hidden">Tema</label>
+            <select id="article-theme" name="theme" required style="width:100%;padding:0.6rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid rgba(15,23,36,0.06)">
+              <option value="">Seleciona um tema</option>
+              <option value="espiritualidade">Espiritualidade</option>
+              <option value="saude-mental">Saúde Mental</option>
+              <option value="praticas">Práticas</option>
+              <option value="historia">História</option>
+            </select>
+
+            <label for="article-excerpt" class="visually-hidden">Resumo</label>
+            <textarea id="article-excerpt" name="excerpt" placeholder="Resumo curto (opcional)" rows="3" style="width:100%;padding:0.6rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid rgba(15,23,36,0.06)"></textarea>
+
+            <label for="article-body" class="visually-hidden">Conteúdo</label>
+            <textarea id="article-body" name="body" placeholder="Conteúdo do artigo (HTML ou texto)" rows="10" required style="width:100%;padding:0.6rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid rgba(15,23,36,0.06)"></textarea>
+
+            <div style="display:flex;gap:0.5rem;align-items:center">
+              <button id="save-article" class="btn" type="submit">Guardar artigo</button>
+              <button id="preview-article" class="btn btn-outline" type="button">Pré-visualizar</button>
+              <span id="article-status" style="margin-left:auto;color:#475569;font-size:0.95rem"></span>
+            </div>
+          </form>
+        </div>
+
+        <aside style="background:#fff;padding:1rem;border-radius:8px;box-shadow:var(--card-shadow)">
+          <h4>Imagem de destaque</h4>
+          <form id="upload-form" action="/api/upload" method="post" enctype="multipart/form-data" novalidate>
+            <input id="image-file" name="file" type="file" accept="image/*" style="margin-bottom:0.5rem" />
+            <button id="upload-btn" class="btn" type="submit">Carregar imagem</button>
+          </form>
+
+          <div id="uploaded-preview" style="margin-top:0.75rem;display:none">
+            <p style="margin:0 0 0.5rem">Pré-visualização:</p>
+            <img id="preview-img" src="" alt="Pré-visualização da imagem" style="width:100%;border-radius:6px;display:block" />
+            <button id="use-image" class="btn btn-outline" style="margin-top:0.5rem">Usar imagem como destaque</button>
+          </div>
+
+          <hr style="margin:0.75rem 0" />
+
+          <h4>Artigos existentes</h4>
+          <div id="articles-list" style="max-height:320px;overflow:auto"></div>
+        </aside>
+      </div>
     </section>
   </main>
 
-  <!-- Footer partial -->
   <div id="site-footer"></div>
+
+  <!-- Preview modal (usado para pré-visualizar artigos) -->
+  <div id="preview-modal" class="preview-modal" hidden aria-hidden="true" role="dialog" aria-label="Pré-visualização do artigo">
+    <div class="preview-inner" role="document">
+      <div class="close-row"><button id="close-preview" class="btn btn-outline" aria-label="Fechar pré-visualização">Fechar</button></div>
+      <div id="preview-content" style="margin-top:1rem"></div>
+    </div>
+  </div>
+
+  <!-- Login modal (abre a partir do menu) -->
+  <div id="login-modal" class="preview-modal" hidden aria-hidden="true" role="dialog" aria-label="Login administrativo">
+    <div class="preview-inner" role="document" style="max-width:420px;">
+      <div style="display:flex;justify-content:flex-end">
+        <button id="login-modal-close" class="btn btn-outline" aria-label="Fechar login">Fechar</button>
+      </div>
+
+      <form id="login-form-modal" action="/api/login" method="post" novalidate style="margin-top:0.5rem">
+        <label for="login-token-modal" class="visually-hidden">Token</label>
+        <input id="login-token-modal" name="token" type="password" placeholder="Token de administração" required style="width:100%;padding:0.6rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid rgba(15,23,36,0.06)" />
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+          <button id="login-submit" class="btn" type="submit">Entrar</button>
+        </div>
+        <div id="login-msg" style="margin-top:0.5rem;color:#e11d48"></div>
+      </form>
+    </div>
+  </div>
+
   <script>
-    (async ()=>{
-      const el = document.getElementById('site-footer');
-      if (!el) return;
-      try {
-        const r = await fetch('/partials/footer.html', { cache: 'no-cache' });
-        if (r.ok) el.innerHTML = await r.text();
-        else el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
-      } catch (e) {
-        el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
-      }
-    })();
-  </script>
+    (function () {
+      // Inicialização centralizada: espera DOM e menu carregado
+      function initAll() {
+        // Helpers
+        const $ = (sel) => document.querySelector(sel);
+        const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+        const show = (el) => el && (el.style.display = '');
+        const hide = (el) => el && (el.style.display = 'none');
 
-  <!-- Script do admin: modal, upload e criação de artigo -->
-  <script>
-    (function(){
-      // Elementos
-      const btnNew = document.getElementById('btn-new');
-      const modal = document.getElementById('modal');
-      const modalClose = document.getElementById('modal-close');
-      const cancelBtn = document.getElementById('cancel-article');
-      const form = document.getElementById('article-form');
-      const msgEl = document.getElementById('modal-msg');
-      const imageInput = document.getElementById('imageInput');
+        // Elements (main)
+        const loginBox = document.getElementById('login-box');
+        const loginFormInline = document.getElementById('login-form'); // fallback inline
+        const loginTokenInline = document.getElementById('login-token');
+        const logoutBtn = document.getElementById('logout-btn');
+        const adminActions = document.getElementById('admin-actions');
+        const articleForm = document.getElementById('article-form');
+        const articleStatus = document.getElementById('article-status');
+        const uploadForm = document.getElementById('upload-form');
+        const imageFile = document.getElementById('image-file');
+        const uploadedPreview = document.getElementById('uploaded-preview');
+        const previewImg = document.getElementById('preview-img');
+        const useImageBtn = document.getElementById('use-image');
+        const articlesList = document.getElementById('articles-list');
+        const saveBtn = document.getElementById('save-article');
+        const uploadBtn = document.getElementById('upload-btn');
 
-      // Helpers
-      function showModal() { modal.hidden = false; modal.querySelector('input,textarea')?.focus(); }
-      function hideModal() { modal.hidden = true; form.reset(); msgEl.textContent = ''; }
-      function showMsg(text, isError=false) { msgEl.textContent = text; msgEl.style.color = isError ? 'crimson' : ''; }
+        // Preview modal elements
+        const previewModal = document.getElementById('preview-modal');
+        const previewContent = document.getElementById('preview-content');
+        const closePreview = document.getElementById('close-preview');
+        const previewTrigger = document.getElementById('preview-article');
 
-      // Auth helper
-      function getToken() { try { return sessionStorage.getItem('nd_token'); } catch { return null; } }
+        // Login modal elements (menu-driven)
+        const menuLoginBtn = document.getElementById('menu-login-btn');
+        const loginModal = document.getElementById('login-modal');
+        const loginModalClose = document.getElementById('login-modal-close');
+        const loginFormModal = document.getElementById('login-form-modal');
+        const loginTokenModal = document.getElementById('login-token-modal');
+        const loginMsg = document.getElementById('login-msg');
 
-      // Open modal handlers
-      btnNew.addEventListener('click', () => {
-        // preserve previous behavior: set flag if needed
-        try { sessionStorage.setItem('nd_open_new', '1'); } catch {}
-        showModal();
-      });
-      modalClose.addEventListener('click', hideModal);
-      cancelBtn.addEventListener('click', hideModal);
-      modal.addEventListener('click', (e) => { if (e.target === modal) hideModal(); });
+        // State
+        let uploadedImageUrl = null;
+        let editingId = null;
 
-      // Form submit: upload image (if any) then create article
-      form.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        showMsg('A processar…');
+        // Toast helper with fallback
+        const t = {
+          success: (m) => window.toastSuccess ? toastSuccess(m) : alert(m),
+          error: (m) => window.toastError ? toastError(m) : alert(m),
+          warn: (m) => window.toastWarn ? toastWarn(m) : alert(m),
+          info: (m) => window.toastInfo ? toastInfo(m) : alert(m)
+        };
 
-        const token = getToken();
-        if (!token) { showMsg('Não autenticado. Faz login antes.', true); return; }
+        function escapeHtml(s){ return String(s || '').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]); }
 
-        const title = document.getElementById('title').value.trim();
-        const date = document.getElementById('date').value;
-        const excerpt = document.getElementById('excerpt').value.trim();
-        const content = document.getElementById('content').value.trim();
+        // Auth UI
+        function setAuthUI(token) {
+          if (token) {
+            if (loginBox) hide(loginBox);
+            if (logoutBtn) show(logoutBtn);
+            if (adminActions) show(adminActions);
+            t.info('Sessão iniciada');
+            loadArticlesList();
+          } else {
+            if (loginBox) show(loginBox);
+            if (logoutBtn) hide(logoutBtn);
+            if (adminActions) hide(adminActions);
+          }
+        }
+        const stored = sessionStorage.getItem('nd_token');
+        setAuthUI(stored);
 
-        if (!title || !date || !content) { showMsg('Preenche título, data e conteúdo.', true); return; }
+        // Robust inline login handler (fallback)
+        if (loginFormInline) {
+          loginFormInline.addEventListener('submit', async (ev) => {
+            ev.preventDefault(); ev.stopPropagation();
+            const token = (loginTokenInline && loginTokenInline.value || '').trim();
+            if (!token) { t.warn('Insere o token.'); return; }
+            try {
+              const res = await fetch(loginFormInline.action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+                redirect: 'manual'
+              });
+              if (res.status === 302 || res.status === 303) {
+                sessionStorage.setItem('nd_token', token);
+                setAuthUI(token);
+                t.success('Autenticado (redirect recebido).');
+                return;
+              }
+              if (res.ok) {
+                sessionStorage.setItem('nd_token', token);
+                setAuthUI(token);
+                if (loginTokenInline) loginTokenInline.value = '';
+                t.success('Autenticado com sucesso.');
+              } else {
+                const text = await res.text().catch(()=>null);
+                t.error(text || 'Token inválido.');
+              }
+            } catch (err) {
+              t.error('Erro de rede ao autenticar.');
+            }
+          });
+        }
 
-        try {
-          let imageUrl = '';
-          let imageThumbUrl = '';
+        // Logout
+        if (logoutBtn) logoutBtn.addEventListener('click', () => {
+          sessionStorage.removeItem('nd_token');
+          setAuthUI(null);
+          location.reload();
+        });
 
-          // Se houver ficheiro, faz upload primeiro
-          const file = imageInput.files?.[0];
-          if (file) {
-            const fd = new FormData();
-            fd.append('image', file); // backend espera 'image'
-            const upRes = await fetch('/api/upload', {
-              method: 'POST',
-              headers: { Authorization: 'Bearer ' + token },
-              body: fd
-            });
-            if (!upRes.ok) {
-              const txt = await upRes.text();
-              showMsg('Upload falhou: ' + txt, true);
+        // Load list of articles
+        async function loadArticlesList() {
+          if (!articlesList) return;
+          articlesList.innerHTML = 'A carregar...';
+          try {
+            const res = await fetch('/api/articles', { cache: 'no-cache' });
+            if (!res.ok) { articlesList.innerHTML = '<p>Não foi possível carregar artigos.</p>'; return; }
+            const data = await res.json();
+            if (!Array.isArray(data) || data.length === 0) {
+              articlesList.innerHTML = '<p>Nenhum artigo encontrado.</p>';
               return;
             }
-            const upJson = await upRes.json();
-            imageUrl = upJson.url || '';
-            imageThumbUrl = upJson.thumbUrl || upJson.thumb || '';
+            articlesList.innerHTML = '';
+            data.forEach(a => {
+              const item = document.createElement('div');
+              item.style.padding = '0.5rem 0';
+              item.style.borderBottom = '1px solid rgba(15,23,36,0.04)';
+              item.innerHTML = `<strong>${escapeHtml(a.title)}</strong><div style="margin-top:0.25rem"><button data-id="${a.id}" class="edit-article btn btn-outline" type="button">Editar</button> <button data-id="${a.id}" class="delete-article btn" type="button">Eliminar</button></div>`;
+              articlesList.appendChild(item);
+              if (editingId && a.id === editingId) {
+                item.style.background = 'rgba(43,108,176,0.06)';
+                setTimeout(()=> item.style.background = '', 2200);
+              }
+            });
+            $$('.edit-article').forEach(b => b.addEventListener('click', onEditArticle));
+            $$('.delete-article').forEach(b => b.addEventListener('click', onDeleteArticle));
+          } catch (err) {
+            articlesList.innerHTML = '<p>Erro ao carregar artigos.</p>';
+          }
+        }
+
+        // Edit article
+        async function onEditArticle(ev) {
+          const id = ev.currentTarget.dataset.id;
+          try {
+            const res = await fetch(`/api/articles/${id}`, { cache: 'no-cache' });
+            if (!res.ok) { t.error('Não foi possível obter o artigo.'); return; }
+            const a = await res.json();
+            $('#article-title').value = a.title || '';
+            $('#article-theme').value = a.theme || '';
+            $('#article-excerpt').value = a.excerpt || '';
+            $('#article-body').value = a.body || '';
+            editingId = id;
+            articleStatus.textContent = 'A editar artigo';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } catch (err) {
+            t.error('Erro ao carregar artigo.');
+          }
+        }
+
+        // Delete article
+        async function onDeleteArticle(ev) {
+          const id = ev.currentTarget.dataset.id;
+          if (!confirm('Eliminar este artigo?')) return;
+          try {
+            const token = sessionStorage.getItem('nd_token');
+            const res = await fetch(`/api/articles/${id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+            });
+            if (res.ok) {
+              t.success('Artigo eliminado.');
+              loadArticlesList();
+            } else {
+              t.error('Não foi possível eliminar o artigo.');
+            }
+          } catch (err) {
+            t.error('Erro de rede ao eliminar.');
+          }
+        }
+
+        // Validation helper
+        function validateArticleForm() {
+          const title = $('#article-title').value.trim();
+          const theme = $('#article-theme').value;
+          const body = $('#article-body').value.trim();
+          if (!title) { t.warn('Preenche o título.'); return false; }
+          if (!theme) { t.warn('Seleciona um tema.'); return false; }
+          if (!body) { t.warn('Escreve o conteúdo do artigo.'); return false; }
+          return true;
+        }
+
+        // Save article
+        if (articleForm) {
+          articleForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const prevText = saveBtn.textContent;
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'A gravar...';
+            try {
+              if (!validateArticleForm()) return;
+              const title = $('#article-title').value.trim();
+              const theme = $('#article-theme').value;
+              const body = $('#article-body').value.trim();
+              const payload = { title, theme, excerpt: $('#article-excerpt').value.trim(), body, image: uploadedImageUrl || null };
+              const token = sessionStorage.getItem('nd_token');
+              const url = editingId ? `/api/articles/${editingId}` : articleForm.action;
+              const method = editingId ? 'PUT' : 'POST';
+              const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+                body: JSON.stringify(payload)
+              });
+              if (res.ok) {
+                t.success(editingId ? 'Artigo atualizado.' : 'Artigo criado.');
+                articleForm.reset();
+                uploadedImageUrl = null;
+                hide(uploadedPreview);
+                editingId = null;
+                articleStatus.textContent = '';
+                loadArticlesList();
+              } else {
+                const text = await res.text().catch(()=>null);
+                t.error(text || 'Erro ao guardar artigo.');
+              }
+            } catch (err) {
+              t.error('Erro de rede ao guardar artigo.');
+            } finally {
+              saveBtn.disabled = false;
+              saveBtn.textContent = prevText;
+            }
+          });
+        }
+
+        // Upload image
+        if (uploadForm) {
+          uploadForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const file = imageFile.files && imageFile.files[0];
+            if (!file) { t.warn('Seleciona uma imagem.'); return; }
+            uploadBtn.disabled = true;
+            const prev = uploadBtn.textContent;
+            uploadBtn.textContent = 'A carregar...';
+            try {
+              const formData = new FormData();
+              formData.append('file', file);
+              const token = sessionStorage.getItem('nd_token');
+              const res = await fetch(uploadForm.action, {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                body: formData
+              });
+              if (res.ok) {
+                const data = await res.json();
+                uploadedImageUrl = data.url || data.path || null;
+                if (uploadedImageUrl) {
+                  previewImg.src = uploadedImageUrl;
+                  show(uploadedPreview);
+                  t.success('Imagem carregada.');
+                } else {
+                  t.warn('Imagem carregada, mas sem URL de retorno.');
+                }
+              } else {
+                const text = await res.text().catch(()=>null);
+                t.error(text || 'Erro ao carregar imagem.');
+              }
+            } catch (err) {
+              t.error('Erro de rede no upload.');
+            } finally {
+              uploadBtn.disabled = false;
+              uploadBtn.textContent = prev;
+            }
+          });
+        }
+
+        if (useImageBtn) useImageBtn.addEventListener('click', () => {
+          if (!uploadedImageUrl) { t.warn('Nenhuma imagem disponível.'); return; }
+          $('#article-excerpt').value = $('#article-excerpt').value + `\nImagem destaque: ${uploadedImageUrl}`;
+          t.info('Imagem adicionada ao resumo. Podes ajustar no campo de conteúdo.');
+        });
+
+        // Preview modal handlers
+        function openPreview(title, body) {
+          if (!previewModal) return;
+          previewContent.innerHTML = `<article><h1>${title}</h1><div>${body}</div></article>`;
+          previewModal.hidden = false;
+          previewModal.style.display = 'flex';
+          previewModal.setAttribute('aria-hidden','false');
+          if (closePreview) closePreview.focus();
+        }
+        function doClosePreview() {
+          if (!previewModal) return;
+          previewModal.hidden = true;
+          previewModal.style.display = 'none';
+          previewModal.setAttribute('aria-hidden','true');
+          previewContent.innerHTML = '';
+        }
+        if (previewTrigger) {
+          previewTrigger.addEventListener('click', () => {
+            const title = escapeHtml($('#article-title').value || 'Sem título');
+            const body = $('#article-body').value || '';
+            openPreview(title, body);
+          });
+        }
+        if (closePreview) closePreview.addEventListener('click', doClosePreview);
+        if (previewModal) {
+          previewModal.addEventListener('click', (ev) => { if (ev.target === previewModal) doClosePreview(); });
+        }
+        document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && previewModal && !previewModal.hidden) doClosePreview(); });
+
+        // Login modal (menu-driven) initialization
+        function initLoginModal() {
+          const openBtn = document.getElementById('menu-login-btn');
+          if (!openBtn || !loginModal || !loginModalClose || !loginFormModal) return;
+
+          function showModal() {
+            loginModal.hidden = false;
+            loginModal.style.display = 'flex';
+            loginModal.setAttribute('aria-hidden','false');
+            const first = loginModal.querySelector('input,button');
+            if (first) first.focus();
+          }
+          function hideModal() {
+            loginModal.hidden = true;
+            loginModal.style.display = 'none';
+            loginModal.setAttribute('aria-hidden','true');
+            loginMsg.textContent = '';
+            loginFormModal.reset();
           }
 
-          // Criar artigo
-          const payload = { title, date, excerpt, content, imageUrl, imageThumbUrl };
-          const createRes = await fetch('/api/articles', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-            body: JSON.stringify(payload)
+          openBtn.addEventListener('click', showModal);
+          loginModalClose.addEventListener('click', hideModal);
+          loginModal.addEventListener('click', (ev) => { if (ev.target === loginModal) hideModal(); });
+          document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !loginModal.hidden) hideModal(); });
+
+          loginFormModal.addEventListener('submit', async (ev) => {
+            ev.preventDefault(); ev.stopPropagation();
+            loginMsg.textContent = '';
+            const token = (loginTokenModal && loginTokenModal.value || '').trim();
+            if (!token) { loginMsg.textContent = 'Insere o token.'; return; }
+            const submitBtn = document.getElementById('login-submit');
+            const prev = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'A autenticar...';
+            try {
+              const res = await fetch(loginFormModal.action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+                redirect: 'manual'
+              });
+              if (res.status === 302 || res.status === 303) {
+                sessionStorage.setItem('nd_token', token);
+                hideModal();
+                location.reload();
+                return;
+              }
+              if (res.ok) {
+                sessionStorage.setItem('nd_token', token);
+                hideModal();
+                location.reload();
+              } else {
+                const text = await res.text().catch(()=>null);
+                loginMsg.textContent = text || 'Token inválido.';
+              }
+            } catch (err) {
+              loginMsg.textContent = 'Erro de rede ao autenticar.';
+            } finally {
+              submitBtn.disabled = false;
+              submitBtn.textContent = prev;
+            }
           });
-          if (!createRes.ok) {
-            const txt = await createRes.text();
-            showMsg('Criação falhou: ' + txt, true);
-            return;
+        }
+
+        // Initialize login modal when menu is ready or immediately if present
+        if (document.getElementById('menu-login-btn')) initLoginModal();
+        else {
+          document.addEventListener('menu:loaded', initLoginModal);
+          let tries = 0;
+          const iv = setInterval(()=> {
+            if (document.getElementById('menu-login-btn')) { clearInterval(iv); initLoginModal(); }
+            if (++tries > 8) clearInterval(iv);
+          }, 300);
+        }
+
+        // Ensure toasts.js loaded if not present
+        (function ensureToastsLoaded(){
+          if (!window.toastSuccess) {
+            const s = document.querySelector('script[src="/js/toasts.js"]');
+            if (!s) {
+              const sc = document.createElement('script');
+              sc.src = '/js/toasts.js';
+              sc.defer = true;
+              document.head.appendChild(sc);
+            }
           }
-          const created = await createRes.json();
-          showMsg('Artigo criado com sucesso.');
-          // opcional: atualizar lista de artigos
-          setTimeout(() => { hideModal(); loadAdminArticles(); }, 800);
-        } catch (err) {
-          showMsg('Erro inesperado: ' + (err.message || err), true);
-        }
-      });
+        })();
 
-      // Função para listar artigos no admin (simples)
-      async function loadAdminArticles() {
-        const container = document.getElementById('articles-admin');
-        if (!container) return;
-        container.innerHTML = '<p class="loading">A carregar artigos…</p>';
-        try {
-          const res = await fetch('/api/articles?page=1&perPage=50', { cache: 'no-cache' });
-          if (!res.ok) { container.innerHTML = '<p class="error">Erro ao carregar artigos.</p>'; return; }
-          const json = await res.json();
-          const items = json.items || (Array.isArray(json) ? json : []);
-          if (!items.length) { container.innerHTML = '<p class="empty">Sem artigos.</p>'; return; }
-          container.innerHTML = '';
-          items.forEach(a => {
-            const el = document.createElement('div');
-            el.className = 'admin-article';
-            el.innerHTML = `<strong>${a.title}</strong> <small>${a.date || ''}</small>
-              <div class="admin-actions">
-                <button class="btn-edit" data-id="${a.id}">Editar</button>
-                <button class="btn-delete" data-id="${a.id}">Eliminar</button>
-              </div>`;
-            container.appendChild(el);
-          });
-          // attach delete/edit handlers (delegation could be used)
-          container.querySelectorAll('.btn-delete').forEach(b => b.addEventListener('click', onDelete));
-          container.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', onEdit));
-        } catch (e) {
-          container.innerHTML = '<p class="error">Erro de rede.</p>';
-        }
+        // Simple confirm fallback
+        window.confirm = window.confirm || function(msg){ return true; };
+      } // end initAll
+
+      // Run initAll after DOMContentLoaded
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAll);
+      } else {
+        setTimeout(initAll, 0);
       }
-
-      async function onDelete(ev) {
-        const id = ev.currentTarget.dataset.id;
-        if (!confirm('Eliminar este artigo?')) return;
-        const token = getToken();
-        if (!token) return alert('Não autenticado.');
-        try {
-          const res = await fetch('/api/articles/' + encodeURIComponent(id), {
-            method: 'DELETE',
-            headers: { Authorization: 'Bearer ' + token }
-          });
-          if (!res.ok) return alert('Erro ao eliminar.');
-          loadAdminArticles();
-        } catch (e) { alert('Erro de rede.'); }
-      }
-
-      async function onEdit(ev) {
-        const id = ev.currentTarget.dataset.id;
-        // comportamento simples: abrir modal e preencher campos com dados do artigo
-        try {
-          const res = await fetch('/api/articles/' + encodeURIComponent(id), { cache: 'no-cache' });
-          if (!res.ok) return alert('Erro ao carregar artigo.');
-          const a = await res.json();
-          document.getElementById('title').value = a.title || '';
-          document.getElementById('date').value = a.date ? a.date.split('T')[0] : '';
-          document.getElementById('excerpt').value = a.excerpt || '';
-          document.getElementById('content').value = a.content || a.body || '';
-          showModal();
-          // para edição real, o submit handler teria de usar PUT/PATCH em vez de POST
-        } catch (e) { alert('Erro de rede.'); }
-      }
-
-      // Inicialização
-      loadAdminArticles();
-
-      // Auto-open modal se flag definida (compat com menu-loader)
-      try {
-        if (sessionStorage.getItem('nd_open_new')) {
-          sessionStorage.removeItem('nd_open_new');
-          showModal();
-        }
-      } catch (e) {}
     })();
   </script>
 </body>

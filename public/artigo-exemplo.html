@@ -3,47 +3,80 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Artigo — Novo Despertar</title>
-  <meta name="description" content="Leitura de artigo do Novo Despertar." />
-  <link rel="stylesheet" href="/css/styles.css" />
+  <title>Como começar uma prática diária — Novo Despertar</title>
+  <meta name="description" content="Guia prático para iniciar uma prática diária de presença e bem-estar." />
+  <link rel="stylesheet" href="/css/theme.css?v=1" />
   <link rel="icon" href="/favicon.ico" />
 </head>
 <body>
-  <!-- Menu centralizado (partial carregado por /js/menu-loader.js) -->
+  <!-- Menu (partial carregado por menu-loader.js) -->
   <div id="site-menu"></div>
   <script src="/js/menu-loader.js" defer></script>
+  <script src="/js/toasts.js" defer></script>
 
   <main class="container" id="main" role="main">
-    <article id="article" class="article" itemscope itemtype="http://schema.org/Article">
+    <article class="article" aria-labelledby="article-title">
       <header class="article-header">
-        <h1 id="article-title" itemprop="headline">A carregar…</h1>
-        <p class="article-meta">
-          <span id="article-date" itemprop="datePublished"></span>
-          <span id="article-category"></span>
-        </p>
+        <h1 id="article-title" class="hero-title">Como começar uma prática diária</h1>
+        <p class="hero-lead">Pequenos passos para criar uma rotina que sustente presença e bem‑estar.</p>
+        <p class="meta">Publicado em <time datetime="2026-03-01">1 de Março de 2026</time> • Categoria: <a href="/temas.html?tema=praticas">Práticas</a></p>
       </header>
 
-      <figure class="article-hero" id="article-hero" aria-hidden="true">
-        <!-- imagem principal será inserida dinamicamente -->
-      </figure>
+      <section class="article-body">
+        <p>Começar uma prática diária não precisa de ser complicado. O objetivo é criar um hábito sustentável que se encaixe na tua rotina.</p>
 
-      <div id="article-content" class="article-content" itemprop="articleBody">
-        <p class="loading">A carregar conteúdo do artigo…</p>
-      </div>
+        <h2>1. Escolhe um momento curto e consistente</h2>
+        <p>Começa com 3–5 minutos ao acordar ou antes de dormir. A consistência é mais importante que a duração.</p>
 
-      <footer class="article-footer">
-        <div class="article-actions">
-          <button id="btn-share" type="button">Partilhar</button>
-          <a id="btn-admin-edit" href="/admin.html" class="btn-link" hidden>Editar (Admin)</a>
-        </div>
-      </footer>
+        <h2>2. Define um gatilho</h2>
+        <p>Associa a prática a algo que já fazes (ex.: depois de escovar os dentes). O gatilho ajuda a automatizar o comportamento.</p>
+
+        <h2>3. Mantém a prática simples</h2>
+        <p>Foca-te na respiração, numa curta meditação guiada ou num exercício de gratidão. Evita metas ambiciosas no início.</p>
+
+        <h2>4. Regista e celebra pequenas vitórias</h2>
+        <p>Marca os dias em que praticaste; celebra 7 dias seguidos com algo simbólico.</p>
+
+        <hr />
+
+        <section aria-labelledby="practical-tools">
+          <h3 id="practical-tools">Ferramentas práticas</h3>
+          <ul>
+            <li>Timer simples no telemóvel</li>
+            <li>Aplicações de meditação com sessões de 3–5 minutos</li>
+            <li>Um caderno para notas rápidas após a prática</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="cta" style="margin-top:1.25rem">
+          <h3 id="cta">Experimenta agora</h3>
+          <p>Faz um teste de 3 minutos: senta-te, respira fundo e conta as respirações. Quando terminares, clica em "Concluído".</p>
+          <button id="practice-start" class="btn">Iniciar 3 minutos</button>
+          <button id="practice-done" class="btn btn-outline" style="margin-left:0.5rem">Concluído</button>
+        </section>
+      </section>
     </article>
+
+    <aside class="sidebar" aria-label="Complementos">
+      <section class="subscribe" style="margin-top:1.5rem">
+        <h4>Subscrever</h4>
+        <p>Recebe novidades por email sobre novos artigos e eventos.</p>
+
+        <form id="subscribe-form" action="/api/subscribe" method="post" novalidate>
+          <label for="subscribe-email" class="visually-hidden">Email</label>
+          <input id="subscribe-email" name="email" type="email" placeholder="o teu email" required />
+          <button type="submit" class="btn">Subscrever</button>
+        </form>
+      </section>
+    </aside>
   </main>
 
   <!-- Footer partial -->
   <div id="site-footer"></div>
+
+  <!-- Fallback footer loader (caso menu-loader não carregue footer) -->
   <script>
-    (async ()=>{
+    (async () => {
       const el = document.getElementById('site-footer');
       if (!el) return;
       try {
@@ -56,102 +89,69 @@
     })();
   </script>
 
-  <!-- Script: carregar artigo pelo slug e gerir UI -->
+  <!-- Interações locais: prática guiada curta, subscribe e botões usando toasts -->
   <script>
     (function(){
-      const titleEl = document.getElementById('article-title');
-      const dateEl = document.getElementById('article-date');
-      const catEl = document.getElementById('article-category');
-      const heroEl = document.getElementById('article-hero');
-      const contentEl = document.getElementById('article-content');
-      const editLink = document.getElementById('btn-admin-edit');
+      // Prática guiada simples (timer)
+      const startBtn = document.getElementById('practice-start');
+      const doneBtn = document.getElementById('practice-done');
+      let practiceTimer = null;
 
-      function getSlug() {
-        const params = new URLSearchParams(location.search);
-        return params.get('slug') || '';
+      function startPractice(durationSec = 180) {
+        if (practiceTimer) return;
+        if (window.toastInfo) toastInfo('Iniciando prática de 3 minutos...');
+        else alert('Iniciando prática de 3 minutos...');
+        practiceTimer = setTimeout(() => {
+          practiceTimer = null;
+          if (window.toastSuccess) toastSuccess('Prática concluída — bem feito!');
+          else alert('Prática concluída — bem feito!');
+        }, durationSec * 1000);
       }
 
-      async function fetchArticleBySlug(slug) {
-        if (!slug) return null;
-        try {
-          const res = await fetch('/api/articles?slug=' + encodeURIComponent(slug), { cache: 'no-cache' });
-          if (!res.ok) return null;
-          const json = await res.json();
-          // API may return { items: [...] } or single object; normalize
-          if (Array.isArray(json.items)) return json.items[0] || null;
-          return json || null;
-        } catch (err) {
-          return null;
+      function completePracticeNow() {
+        if (practiceTimer) {
+          clearTimeout(practiceTimer);
+          practiceTimer = null;
+          if (window.toastSuccess) toastSuccess('Prática marcada como concluída.');
+          else alert('Prática marcada como concluída.');
+        } else {
+          if (window.toastWarn) toastWarn('Não há prática em curso.');
+          else alert('Não há prática em curso.');
         }
       }
 
-      function renderHero(imageUrl, imageAlt) {
-        heroEl.innerHTML = '';
-        if (!imageUrl) return;
-        const img = document.createElement('img');
-        img.src = imageUrl;
-        img.alt = imageAlt || '';
-        img.loading = 'lazy';
-        img.width = 1200;
-        img.height = 675;
-        heroEl.appendChild(img);
-        heroEl.removeAttribute('aria-hidden');
-      }
+      startBtn && startBtn.addEventListener('click', () => startPractice(180));
+      doneBtn && doneBtn.addEventListener('click', completePracticeNow);
 
-      function renderContent(html) {
-        contentEl.innerHTML = html || '<p>Conteúdo indisponível.</p>';
-      }
-
-      function formatDate(d) {
-        try {
-          return new Date(d).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' });
-        } catch { return d; }
-      }
-
-      async function init() {
-        const slug = getSlug();
-        if (!slug) {
-          titleEl.textContent = 'Artigo não especificado';
-          contentEl.innerHTML = '<p>O artigo não foi encontrado. Verifica o link.</p>';
-          return;
-        }
-
-        titleEl.textContent = 'A carregar…';
-        const a = await fetchArticleBySlug(slug);
-        if (!a) {
-          titleEl.textContent = 'Artigo não encontrado';
-          contentEl.innerHTML = '<p>Não foi possível carregar o artigo.</p>';
-          return;
-        }
-
-        titleEl.textContent = a.title || 'Sem título';
-        if (a.date) dateEl.textContent = formatDate(a.date);
-        catEl.textContent = a.category ? ' • ' + a.category : '';
-        renderHero(a.imageUrl || a.imageThumbUrl, a.imageAlt || '');
-        renderContent(a.content || a.body || '');
-
-        // mostrar link de edição se token presente
-        try {
-          const token = sessionStorage.getItem('nd_token');
-          if (token) {
-            editLink.hidden = false;
-            // opcional: apontar para edição com slug/id
-            editLink.href = '/admin.html';
+      // Subscribe form: usa toasts quando disponíveis
+      const form = document.getElementById('subscribe-form');
+      if (form) {
+        form.addEventListener('submit', async (ev) => {
+          ev.preventDefault();
+          const email = form.email.value.trim();
+          if (!email) {
+            if (window.toastWarn) { toastWarn('Introduz um email válido.'); } else { alert('Introduz um email válido.'); }
+            return;
           }
-        } catch (e) {}
+          try {
+            const res = await fetch(form.action, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email })
+            });
+            if (res.ok) {
+              if (window.toastSuccess) { toastSuccess('Obrigado — subscrito!'); } else { alert('Obrigado — subscrito!'); }
+              form.reset();
+            } else {
+              const t = await res.text().catch(()=>null);
+              const msg = t || 'Erro ao subscrever.';
+              if (window.toastError) toastError(msg); else alert(msg);
+            }
+          } catch (err) {
+            if (window.toastError) toastError('Erro de rede.'); else alert('Erro de rede.');
+          }
+        });
       }
-
-      // partilha simples: copia URL para clipboard
-      document.getElementById('btn-share').addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(location.href);
-          alert('Link copiado para a área de transferência.');
-        } catch (e) {
-          alert('Não foi possível copiar o link.');
-        }
-      });
-
-      init();
     })();
   </script>
 </body>

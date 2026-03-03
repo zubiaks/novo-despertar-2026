@@ -1,64 +1,73 @@
-// public/js/menu-loader.js
-(function injectThemeCss(){
-  try {
-    const href = '/css/theme.css?v=1';
-    if (!document.querySelector('link[href="'+href+'"]')) {
-      const l = document.createElement('link');
-      l.rel = 'stylesheet';
-      l.href = href;
-      l.crossOrigin = 'anonymous';
-      document.head.appendChild(l);
-    }
-  } catch(e) { /* não bloqueia o loader */ }
-})();
+// public/js/menu-loader.js (versão segura)
+(function () {
+  const TARGET_ID = 'site-menu';
+  const PARTIAL_PATHS = ['/partials/menu.html', '/public/partials/menu.html'];
 
-(async function(){
-  try {
-    const container = document.getElementById('site-menu');
-    if (!container) return;
+  function log(...args){ if (window.console) console.log('[menu-loader]', ...args); }
 
-    const resp = await fetch('/partials/menu.html', { cache: 'no-cache' });
-    if (!resp.ok) {
-      container.innerHTML = '<nav><a href="/index.html">Novo Despertar</a></nav>';
-      return;
-    }
-    container.innerHTML = await resp.text();
-
-    function getToken(){ try { return sessionStorage.getItem('nd_token'); } catch { return null; } }
-    function clearAuth(){ try { sessionStorage.removeItem('nd_token'); sessionStorage.removeItem('nd_open_new'); } catch {} }
-
-    const authEl = document.getElementById('nav-auth');
-    const token = getToken();
-    if (authEl) {
-      if (token) {
-        authEl.innerHTML = '<span class="nav-user">Admin</span><a href="/admin.html" id="nav-admin">Admin</a><button id="nav-logout" class="btn-link" aria-label="Logout">Logout</button>';
-        document.getElementById('nav-logout').addEventListener('click', (e) => { e.preventDefault(); clearAuth(); location.reload(); });
-      } else {
-        authEl.innerHTML = '<a href="/login.html" id="nav-login">Login</a>';
+  async function fetchPartial() {
+    for (const p of PARTIAL_PATHS) {
+      try {
+        const res = await fetch(p, { cache: 'no-cache' });
+        if (!res.ok) { log('not found', p, res.status); continue; }
+        return { html: await res.text(), path: p };
+      } catch (err) {
+        log('fetch error', p, err);
       }
     }
+    return null;
+  }
 
-    const toggle = document.getElementById('nav-toggle');
-    if (toggle) {
-      toggle.addEventListener('click', () => {
-        const nav = document.querySelector('.site-nav');
-        const expanded = nav.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-      });
-    }
+  function runInlineScripts(container) {
+    const scripts = Array.from(container.querySelectorAll('script'));
+    scripts.forEach(old => {
+      const ns = document.createElement('script');
+      if (old.src) { ns.src = old.src; ns.async = false; }
+      else ns.textContent = old.textContent;
+      Array.from(old.attributes).forEach(a => { if (a.name !== 'src') ns.setAttribute(a.name, a.value); });
+      old.parentNode.replaceChild(ns, old);
+    });
+  }
 
-    // highlight active link based on data-nav attributes
-    const map = { '/': 'index', '/index.html': 'index', '/artigos.html': 'artigos', '/temas.html': 'temas', '/sobre.html': 'sobre', '/admin.html': 'admin' };
-    const key = map[location.pathname] || null;
-    document.querySelectorAll('.site-nav a[data-nav]').forEach(a => a.classList.toggle('active', a.getAttribute('data-nav') === key));
-
-    // preserve old behavior: open new-article modal if flag set and on admin page
-    if (location.pathname.endsWith('/admin.html')) {
-      const shouldOpen = (() => { try { return sessionStorage.getItem('nd_open_new'); } catch { return null; } })();
-      if (shouldOpen) {
-        try { sessionStorage.removeItem('nd_open_new'); } catch {}
-        setTimeout(() => { if (typeof openModalForNew === 'function') openModalForNew(); }, 200);
+  function removeLooseTextNodes(target) {
+    const toRemove = [];
+    target.childNodes.forEach(n => {
+      if (n.nodeType === Node.TEXT_NODE) {
+        const txt = n.textContent.trim();
+        if (!txt) toRemove.push(n);
+        else if (txt.length < 40 && !/\n/.test(n.textContent)) toRemove.push(n);
       }
+    });
+    toRemove.forEach(n => n.parentNode.removeChild(n));
+  }
+
+  async function injectMenu() {
+    const target = document.getElementById(TARGET_ID);
+    if (!target) { log('target not found:', TARGET_ID); return; }
+
+    removeLooseTextNodes(target);
+
+    const partial = await fetchPartial();
+    if (!partial) { log('partial not found'); return; }
+
+    const container = document.createElement('div');
+    container.innerHTML = partial.html;
+
+    const incomingNav = container.querySelector('nav') || container.firstElementChild;
+    if (incomingNav) {
+      const existingNav = target.querySelector('nav');
+      if (existingNav) existingNav.replaceWith(incomingNav);
+      else target.appendChild(incomingNav);
+    } else {
+      while (container.firstChild) target.appendChild(container.firstChild);
     }
-  } catch (err) { console.error('menu-loader error', err); }
+
+    try { runInlineScripts(target); } catch (e) { log('script exec error', e); }
+
+    document.dispatchEvent(new CustomEvent('menu:loaded', { detail: { path: partial.path } }));
+    log('menu injected from', partial.path);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectMenu);
+  else setTimeout(injectMenu, 0);
 })();

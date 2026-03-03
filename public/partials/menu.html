@@ -1,13 +1,61 @@
-<nav class="site-nav" role="navigation" aria-label="Main">
-  <a href="/index.html" class="brand" data-nav="index">Novo Despertar</a>
-  <ul class="nav-links">
-    <li><a href="/index.html" data-nav="index">Início</a></li>
-    <li><a href="/artigos.html" data-nav="artigos">Artigos</a></li>
-    <li><a href="/temas.html" data-nav="temas">Temas</a></li>
-    <li><a href="/sobre.html" data-nav="sobre">Sobre</a></li>
-  </ul>
-  <div id="nav-auth" class="nav-auth">
-    <a href="/login.html" id="nav-login">Login</a>
+<nav id="site-nav" class="site-nav" role="navigation" aria-label="Menu principal">
+  <div class="container" style="display:flex;align-items:center;gap:1rem;justify-content:space-between">
+    <a class="brand" href="/" aria-label="Novo Despertar — Início">Novo Despertar</a>
+
+    <button id="nav-toggle" class="btn btn-outline" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir menu">
+      Menu
+    </button>
+
+    <ul id="nav-links" class="nav-links" role="menubar" aria-hidden="true" style="margin:0;padding:0;display:flex;gap:1rem;list-style:none">
+      <li role="none"><a role="menuitem" href="/" class="nav-link">Início</a></li>
+      <li role="none"><a role="menuitem" href="/temas.html" class="nav-link">Temas</a></li>
+      <li role="none"><a role="menuitem" href="/artigos.html" class="nav-link">Artigos</a></li>
+      <li role="none"><a role="menuitem" href="/sobre.html" class="nav-link">Sobre</a></li>
+      <li role="none"><a role="menuitem" href="/admin.html" class="nav-link">Admin</a></li>
+    </ul>
   </div>
-  <button id="nav-toggle" aria-label="Abrir menu" aria-expanded="false">☰</button>
 </nav>
+
+<script>
+  (function(){
+    const toggle = document.getElementById('nav-toggle');
+    const links = document.getElementById('nav-links');
+    if (!toggle || !links) return;
+
+    function openMenu() {
+      links.style.display = 'flex';
+      links.setAttribute('aria-hidden', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('site-nav-open');
+    }
+    function closeMenu() {
+      links.style.display = '';
+      links.setAttribute('aria-hidden', 'true');
+      toggle.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('site-nav-open');
+    }
+
+    toggle.addEventListener('click', () => {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      if (expanded) closeMenu(); else openMenu();
+    });
+
+    document.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') closeMenu();
+    });
+
+    links.addEventListener('click', (ev) => {
+      if (ev.target && ev.target.matches('a')) closeMenu();
+    });
+
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 720) {
+        links.style.display = '';
+        links.setAttribute('aria-hidden', 'false');
+        toggle.setAttribute('aria-expanded', 'false');
+      } else {
+        links.setAttribute('aria-hidden', 'true');
+      }
+    });
+  })();
+</script>
