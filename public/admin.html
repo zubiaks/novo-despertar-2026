@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="/css/theme.css?v=1" />
   <link rel="icon" href="/favicon.ico" />
   <style>
+    /* Modal / preview shared styles (aproveita classes existentes) */
     .preview-modal{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000}
     .preview-inner{background:#fff;padding:1rem;border-radius:8px;max-width:900px;width:95%;max-height:90vh;overflow:auto}
     .preview-inner .close-row{display:flex;justify-content:flex-end}
@@ -26,6 +27,7 @@
       <p class="lead">Criar, editar e gerir artigos. Acesso restrito — inicia sessão para continuar.</p>
     </header>
 
+    <!-- Login area (kept for fallback; primary login is via menu modal) -->
     <section id="auth-section" aria-labelledby="auth-heading" style="margin-bottom:1.25rem">
       <h2 id="auth-heading" class="visually-hidden">Autenticação</h2>
 
@@ -97,6 +99,7 @@
 
   <div id="site-footer"></div>
 
+  <!-- Preview modal (usado para pré-visualizar artigos) -->
   <div id="preview-modal" class="preview-modal" hidden aria-hidden="true" role="dialog" aria-label="Pré-visualização do artigo">
     <div class="preview-inner" role="document">
       <div class="close-row"><button id="close-preview" class="btn btn-outline" aria-label="Fechar pré-visualização">Fechar</button></div>
@@ -104,343 +107,436 @@
     </div>
   </div>
 
+  <!-- Login modal (abre a partir do menu) -->
+  <div id="login-modal" class="preview-modal" hidden aria-hidden="true" role="dialog" aria-label="Login administrativo">
+    <div class="preview-inner" role="document" style="max-width:420px;">
+      <div style="display:flex;justify-content:flex-end">
+        <button id="login-modal-close" class="btn btn-outline" aria-label="Fechar login">Fechar</button>
+      </div>
+
+      <form id="login-form-modal" action="/api/login" method="post" novalidate style="margin-top:0.5rem">
+        <label for="login-token-modal" class="visually-hidden">Token</label>
+        <input id="login-token-modal" name="token" type="password" placeholder="Token de administração" required style="width:100%;padding:0.6rem;margin-bottom:0.5rem;border-radius:6px;border:1px solid rgba(15,23,36,0.06)" />
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end">
+          <button id="login-submit" class="btn" type="submit">Entrar</button>
+        </div>
+        <div id="login-msg" style="margin-top:0.5rem;color:#e11d48"></div>
+      </form>
+    </div>
+  </div>
+
   <script>
-    document.addEventListener('DOMContentLoaded', function () {
-      // Helpers
-      const $ = (sel) => document.querySelector(sel);
-      const $$ = (sel) => Array.from(document.querySelectorAll(sel));
-      const show = (el) => el && (el.style.display = '');
-      const hide = (el) => el && (el.style.display = 'none');
+    (function () {
+      // Inicialização centralizada: espera DOM e menu carregado
+      function initAll() {
+        // Helpers
+        const $ = (sel) => document.querySelector(sel);
+        const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+        const show = (el) => el && (el.style.display = '');
+        const hide = (el) => el && (el.style.display = 'none');
 
-      // Elements (queremos garantir que existem após DOM ready)
-      const loginForm = document.getElementById('login-form');
-      const loginToken = document.getElementById('login-token');
-      const logoutBtn = document.getElementById('logout-btn');
-      const adminActions = document.getElementById('admin-actions');
-      const articleForm = document.getElementById('article-form');
-      const articleStatus = document.getElementById('article-status');
-      const uploadForm = document.getElementById('upload-form');
-      const imageFile = document.getElementById('image-file');
-      const uploadedPreview = document.getElementById('uploaded-preview');
-      const previewImg = document.getElementById('preview-img');
-      const useImageBtn = document.getElementById('use-image');
-      const articlesList = document.getElementById('articles-list');
-      const saveBtn = document.getElementById('save-article');
-      const uploadBtn = document.getElementById('upload-btn');
+        // Elements (main)
+        const loginBox = document.getElementById('login-box');
+        const loginFormInline = document.getElementById('login-form'); // fallback inline
+        const loginTokenInline = document.getElementById('login-token');
+        const logoutBtn = document.getElementById('logout-btn');
+        const adminActions = document.getElementById('admin-actions');
+        const articleForm = document.getElementById('article-form');
+        const articleStatus = document.getElementById('article-status');
+        const uploadForm = document.getElementById('upload-form');
+        const imageFile = document.getElementById('image-file');
+        const uploadedPreview = document.getElementById('uploaded-preview');
+        const previewImg = document.getElementById('preview-img');
+        const useImageBtn = document.getElementById('use-image');
+        const articlesList = document.getElementById('articles-list');
+        const saveBtn = document.getElementById('save-article');
+        const uploadBtn = document.getElementById('upload-btn');
 
-      // Modal elements
-      const previewModal = document.getElementById('preview-modal');
-      const previewContent = document.getElementById('preview-content');
-      const closePreview = document.getElementById('close-preview');
-      const previewTrigger = document.getElementById('preview-article');
+        // Preview modal elements
+        const previewModal = document.getElementById('preview-modal');
+        const previewContent = document.getElementById('preview-content');
+        const closePreview = document.getElementById('close-preview');
+        const previewTrigger = document.getElementById('preview-article');
 
-      // State
-      let uploadedImageUrl = null;
-      let editingId = null;
+        // Login modal elements (menu-driven)
+        const menuLoginBtn = document.getElementById('menu-login-btn');
+        const loginModal = document.getElementById('login-modal');
+        const loginModalClose = document.getElementById('login-modal-close');
+        const loginFormModal = document.getElementById('login-form-modal');
+        const loginTokenModal = document.getElementById('login-token-modal');
+        const loginMsg = document.getElementById('login-msg');
 
-      // Toast helper with fallback
-      const t = {
-        success: (m) => window.toastSuccess ? toastSuccess(m) : alert(m),
-        error: (m) => window.toastError ? toastError(m) : alert(m),
-        warn: (m) => window.toastWarn ? toastWarn(m) : alert(m),
-        info: (m) => window.toastInfo ? toastInfo(m) : alert(m)
-      };
+        // State
+        let uploadedImageUrl = null;
+        let editingId = null;
 
-      // Escape helper
-      function escapeHtml(s){ return String(s || '').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]); }
+        // Toast helper with fallback
+        const t = {
+          success: (m) => window.toastSuccess ? toastSuccess(m) : alert(m),
+          error: (m) => window.toastError ? toastError(m) : alert(m),
+          warn: (m) => window.toastWarn ? toastWarn(m) : alert(m),
+          info: (m) => window.toastInfo ? toastInfo(m) : alert(m)
+        };
 
-      // Set auth UI
-      function setAuthUI(token) {
-        if (token) {
-          hide($('#login-box'));
-          show(logoutBtn);
-          show(adminActions);
-          t.info('Sessão iniciada');
-          loadArticlesList();
-        } else {
-          show($('#login-box'));
-          hide(logoutBtn);
-          hide(adminActions);
-        }
-      }
-      const stored = sessionStorage.getItem('nd_token');
-      setAuthUI(stored);
+        function escapeHtml(s){ return String(s || '').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]); }
 
-      // Robust login handler: previne navegação, regista e trata resposta
-      if (loginForm) {
-        loginForm.addEventListener('submit', async (ev) => {
-          ev.preventDefault();
-          ev.stopPropagation();
-          const token = (loginToken && loginToken.value || '').trim();
-          if (!token) { t.warn('Insere o token.'); return; }
-          try {
-            const res = await fetch(loginForm.action, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ token }),
-              redirect: 'manual'
-            });
-
-            if (res.status === 302 || res.status === 303) {
-              sessionStorage.setItem('nd_token', token);
-              setAuthUI(token);
-              t.success('Autenticado (redirect recebido).');
-              return;
-            }
-
-            if (res.ok) {
-              sessionStorage.setItem('nd_token', token);
-              setAuthUI(token);
-              loginToken.value = '';
-              t.success('Autenticado com sucesso.');
-            } else {
-              const text = await res.text().catch(()=>null);
-              t.error(text || 'Token inválido.');
-            }
-          } catch (err) {
-            t.error('Erro de rede ao autenticar.');
-          }
-        });
-      } else {
-        console.warn('[admin] login form not found after DOMContentLoaded');
-      }
-
-      // Logout
-      logoutBtn && logoutBtn.addEventListener('click', () => {
-        sessionStorage.removeItem('nd_token');
-        setAuthUI(null);
-        location.reload();
-      });
-
-      // Load list of articles
-      async function loadArticlesList() {
-        articlesList.innerHTML = 'A carregar...';
-        try {
-          const res = await fetch('/api/articles', { cache: 'no-cache' });
-          if (!res.ok) { articlesList.innerHTML = '<p>Não foi possível carregar artigos.</p>'; return; }
-          const data = await res.json();
-          if (!Array.isArray(data) || data.length === 0) {
-            articlesList.innerHTML = '<p>Nenhum artigo encontrado.</p>';
-            return;
-          }
-          articlesList.innerHTML = '';
-          data.forEach(a => {
-            const item = document.createElement('div');
-            item.style.padding = '0.5rem 0';
-            item.style.borderBottom = '1px solid rgba(15,23,36,0.04)';
-            item.innerHTML = `<strong>${escapeHtml(a.title)}</strong><div style="margin-top:0.25rem"><button data-id="${a.id}" class="edit-article btn btn-outline" type="button">Editar</button> <button data-id="${a.id}" class="delete-article btn" type="button">Eliminar</button></div>`;
-            articlesList.appendChild(item);
-            if (editingId && a.id === editingId) {
-              item.style.background = 'rgba(43,108,176,0.06)';
-              setTimeout(()=> item.style.background = '', 2200);
-            }
-          });
-          $$('.edit-article').forEach(b => b.addEventListener('click', onEditArticle));
-          $$('.delete-article').forEach(b => b.addEventListener('click', onDeleteArticle));
-        } catch (err) {
-          articlesList.innerHTML = '<p>Erro ao carregar artigos.</p>';
-        }
-      }
-
-      // Edit article
-      async function onEditArticle(ev) {
-        const id = ev.currentTarget.dataset.id;
-        try {
-          const res = await fetch(`/api/articles/${id}`, { cache: 'no-cache' });
-          if (!res.ok) { t.error('Não foi possível obter o artigo.'); return; }
-          const a = await res.json();
-          $('#article-title').value = a.title || '';
-          $('#article-theme').value = a.theme || '';
-          $('#article-excerpt').value = a.excerpt || '';
-          $('#article-body').value = a.body || '';
-          editingId = id;
-          articleStatus.textContent = 'A editar artigo';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (err) {
-          t.error('Erro ao carregar artigo.');
-        }
-      }
-
-      // Delete article
-      async function onDeleteArticle(ev) {
-        const id = ev.currentTarget.dataset.id;
-        if (!confirm('Eliminar este artigo?')) return;
-        try {
-          const token = sessionStorage.getItem('nd_token');
-          const res = await fetch(`/api/articles/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': token ? `Bearer ${token}` : '' }
-          });
-          if (res.ok) {
-            t.success('Artigo eliminado.');
+        // Auth UI
+        function setAuthUI(token) {
+          if (token) {
+            if (loginBox) hide(loginBox);
+            if (logoutBtn) show(logoutBtn);
+            if (adminActions) show(adminActions);
+            t.info('Sessão iniciada');
             loadArticlesList();
           } else {
-            t.error('Não foi possível eliminar o artigo.');
+            if (loginBox) show(loginBox);
+            if (logoutBtn) hide(logoutBtn);
+            if (adminActions) hide(adminActions);
           }
-        } catch (err) {
-          t.error('Erro de rede ao eliminar.');
         }
-      }
+        const stored = sessionStorage.getItem('nd_token');
+        setAuthUI(stored);
 
-      // Validation helper
-      function validateArticleForm() {
-        const title = $('#article-title').value.trim();
-        const theme = $('#article-theme').value;
-        const body = $('#article-body').value.trim();
-        if (!title) { t.warn('Preenche o título.'); return false; }
-        if (!theme) { t.warn('Seleciona um tema.'); return false; }
-        if (!body) { t.warn('Escreve o conteúdo do artigo.'); return false; }
-        return true;
-      }
+        // Robust inline login handler (fallback)
+        if (loginFormInline) {
+          loginFormInline.addEventListener('submit', async (ev) => {
+            ev.preventDefault(); ev.stopPropagation();
+            const token = (loginTokenInline && loginTokenInline.value || '').trim();
+            if (!token) { t.warn('Insere o token.'); return; }
+            try {
+              const res = await fetch(loginFormInline.action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+                redirect: 'manual'
+              });
+              if (res.status === 302 || res.status === 303) {
+                sessionStorage.setItem('nd_token', token);
+                setAuthUI(token);
+                t.success('Autenticado (redirect recebido).');
+                return;
+              }
+              if (res.ok) {
+                sessionStorage.setItem('nd_token', token);
+                setAuthUI(token);
+                if (loginTokenInline) loginTokenInline.value = '';
+                t.success('Autenticado com sucesso.');
+              } else {
+                const text = await res.text().catch(()=>null);
+                t.error(text || 'Token inválido.');
+              }
+            } catch (err) {
+              t.error('Erro de rede ao autenticar.');
+            }
+          });
+        }
 
-      // Save article with loading state
-      articleForm && articleForm.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        const prevText = saveBtn.textContent;
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'A gravar...';
+        // Logout
+        if (logoutBtn) logoutBtn.addEventListener('click', () => {
+          sessionStorage.removeItem('nd_token');
+          setAuthUI(null);
+          location.reload();
+        });
 
-        try {
-          if (!validateArticleForm()) return;
+        // Load list of articles
+        async function loadArticlesList() {
+          if (!articlesList) return;
+          articlesList.innerHTML = 'A carregar...';
+          try {
+            const res = await fetch('/api/articles', { cache: 'no-cache' });
+            if (!res.ok) { articlesList.innerHTML = '<p>Não foi possível carregar artigos.</p>'; return; }
+            const data = await res.json();
+            if (!Array.isArray(data) || data.length === 0) {
+              articlesList.innerHTML = '<p>Nenhum artigo encontrado.</p>';
+              return;
+            }
+            articlesList.innerHTML = '';
+            data.forEach(a => {
+              const item = document.createElement('div');
+              item.style.padding = '0.5rem 0';
+              item.style.borderBottom = '1px solid rgba(15,23,36,0.04)';
+              item.innerHTML = `<strong>${escapeHtml(a.title)}</strong><div style="margin-top:0.25rem"><button data-id="${a.id}" class="edit-article btn btn-outline" type="button">Editar</button> <button data-id="${a.id}" class="delete-article btn" type="button">Eliminar</button></div>`;
+              articlesList.appendChild(item);
+              if (editingId && a.id === editingId) {
+                item.style.background = 'rgba(43,108,176,0.06)';
+                setTimeout(()=> item.style.background = '', 2200);
+              }
+            });
+            $$('.edit-article').forEach(b => b.addEventListener('click', onEditArticle));
+            $$('.delete-article').forEach(b => b.addEventListener('click', onDeleteArticle));
+          } catch (err) {
+            articlesList.innerHTML = '<p>Erro ao carregar artigos.</p>';
+          }
+        }
+
+        // Edit article
+        async function onEditArticle(ev) {
+          const id = ev.currentTarget.dataset.id;
+          try {
+            const res = await fetch(`/api/articles/${id}`, { cache: 'no-cache' });
+            if (!res.ok) { t.error('Não foi possível obter o artigo.'); return; }
+            const a = await res.json();
+            $('#article-title').value = a.title || '';
+            $('#article-theme').value = a.theme || '';
+            $('#article-excerpt').value = a.excerpt || '';
+            $('#article-body').value = a.body || '';
+            editingId = id;
+            articleStatus.textContent = 'A editar artigo';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } catch (err) {
+            t.error('Erro ao carregar artigo.');
+          }
+        }
+
+        // Delete article
+        async function onDeleteArticle(ev) {
+          const id = ev.currentTarget.dataset.id;
+          if (!confirm('Eliminar este artigo?')) return;
+          try {
+            const token = sessionStorage.getItem('nd_token');
+            const res = await fetch(`/api/articles/${id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': token ? `Bearer ${token}` : '' }
+            });
+            if (res.ok) {
+              t.success('Artigo eliminado.');
+              loadArticlesList();
+            } else {
+              t.error('Não foi possível eliminar o artigo.');
+            }
+          } catch (err) {
+            t.error('Erro de rede ao eliminar.');
+          }
+        }
+
+        // Validation helper
+        function validateArticleForm() {
           const title = $('#article-title').value.trim();
           const theme = $('#article-theme').value;
           const body = $('#article-body').value.trim();
-          const payload = { title, theme, excerpt: $('#article-excerpt').value.trim(), body, image: uploadedImageUrl || null };
-          const token = sessionStorage.getItem('nd_token');
-          const url = editingId ? `/api/articles/${editingId}` : articleForm.action;
-          const method = editingId ? 'PUT' : 'POST';
-
-          const res = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
-            body: JSON.stringify(payload)
-          });
-
-          if (res.ok) {
-            t.success(editingId ? 'Artigo atualizado.' : 'Artigo criado.');
-            articleForm.reset();
-            uploadedImageUrl = null;
-            hide(uploadedPreview);
-            editingId = null;
-            articleStatus.textContent = '';
-            loadArticlesList();
-          } else {
-            const text = await res.text().catch(()=>null);
-            t.error(text || 'Erro ao guardar artigo.');
-          }
-        } catch (err) {
-          t.error('Erro de rede ao guardar artigo.');
-        } finally {
-          saveBtn.disabled = false;
-          saveBtn.textContent = prevText;
+          if (!title) { t.warn('Preenche o título.'); return false; }
+          if (!theme) { t.warn('Seleciona um tema.'); return false; }
+          if (!body) { t.warn('Escreve o conteúdo do artigo.'); return false; }
+          return true;
         }
-      });
 
-      // Upload image with loading and preview
-      uploadForm && uploadForm.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        const file = imageFile.files && imageFile.files[0];
-        if (!file) { t.warn('Seleciona uma imagem.'); return; }
-
-        uploadBtn.disabled = true;
-        const prev = uploadBtn.textContent;
-        uploadBtn.textContent = 'A carregar...';
-
-        try {
-          const formData = new FormData();
-          formData.append('file', file);
-          const token = sessionStorage.getItem('nd_token');
-
-          const res = await fetch(uploadForm.action, {
-            method: 'POST',
-            headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-            body: formData
-          });
-
-          if (res.ok) {
-            const data = await res.json();
-            uploadedImageUrl = data.url || data.path || null;
-            if (uploadedImageUrl) {
-              previewImg.src = uploadedImageUrl;
-              show(uploadedPreview);
-              t.success('Imagem carregada.');
-            } else {
-              t.warn('Imagem carregada, mas sem URL de retorno.');
+        // Save article
+        if (articleForm) {
+          articleForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const prevText = saveBtn.textContent;
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'A gravar...';
+            try {
+              if (!validateArticleForm()) return;
+              const title = $('#article-title').value.trim();
+              const theme = $('#article-theme').value;
+              const body = $('#article-body').value.trim();
+              const payload = { title, theme, excerpt: $('#article-excerpt').value.trim(), body, image: uploadedImageUrl || null };
+              const token = sessionStorage.getItem('nd_token');
+              const url = editingId ? `/api/articles/${editingId}` : articleForm.action;
+              const method = editingId ? 'PUT' : 'POST';
+              const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': token ? `Bearer ${token}` : '' },
+                body: JSON.stringify(payload)
+              });
+              if (res.ok) {
+                t.success(editingId ? 'Artigo atualizado.' : 'Artigo criado.');
+                articleForm.reset();
+                uploadedImageUrl = null;
+                hide(uploadedPreview);
+                editingId = null;
+                articleStatus.textContent = '';
+                loadArticlesList();
+              } else {
+                const text = await res.text().catch(()=>null);
+                t.error(text || 'Erro ao guardar artigo.');
+              }
+            } catch (err) {
+              t.error('Erro de rede ao guardar artigo.');
+            } finally {
+              saveBtn.disabled = false;
+              saveBtn.textContent = prevText;
             }
-          } else {
-            const text = await res.text().catch(()=>null);
-            t.error(text || 'Erro ao carregar imagem.');
-          }
-        } catch (err) {
-          t.error('Erro de rede no upload.');
-        } finally {
-          uploadBtn.disabled = false;
-          uploadBtn.textContent = prev;
+          });
         }
-      });
 
-      // Use uploaded image as destaque
-      useImageBtn && useImageBtn.addEventListener('click', () => {
-        if (!uploadedImageUrl) { t.warn('Nenhuma imagem disponível.'); return; }
-        $('#article-excerpt').value = $('#article-excerpt').value + `\nImagem destaque: ${uploadedImageUrl}`;
-        t.info('Imagem adicionada ao resumo. Podes ajustar no campo de conteúdo.');
-      });
-
-      // Modal open/close handlers
-      function openPreview(title, body) {
-        if (!previewModal) return;
-        previewContent.innerHTML = `<article><h1>${title}</h1><div>${body}</div></article>`;
-        previewModal.hidden = false;
-        previewModal.style.display = 'flex';
-        previewModal.setAttribute('aria-hidden','false');
-        if (closePreview) closePreview.focus();
-      }
-
-      function doClosePreview() {
-        if (!previewModal) return;
-        previewModal.hidden = true;
-        previewModal.style.display = 'none';
-        previewModal.setAttribute('aria-hidden','true');
-        previewContent.innerHTML = '';
-      }
-
-      if (previewTrigger) {
-        previewTrigger.addEventListener('click', () => {
-          const title = escapeHtml($('#article-title').value || 'Sem título');
-          const body = $('#article-body').value || '';
-          openPreview(title, body);
-        });
-      }
-
-      if (closePreview) closePreview.addEventListener('click', doClosePreview);
-
-      if (previewModal) {
-        previewModal.addEventListener('click', (ev) => {
-          if (ev.target === previewModal) doClosePreview();
-        });
-      }
-
-      document.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Escape' && previewModal && !previewModal.hidden) doClosePreview();
-      });
-
-      // Ensure toasts.js loaded if menu-loader didn't inject
-      (function ensureToastsLoaded(){
-        if (!window.toastSuccess) {
-          const s = document.querySelector('script[src="/js/toasts.js"]');
-          if (!s) {
-            const sc = document.createElement('script');
-            sc.src = '/js/toasts.js';
-            sc.defer = true;
-            document.head.appendChild(sc);
-          }
+        // Upload image
+        if (uploadForm) {
+          uploadForm.addEventListener('submit', async (ev) => {
+            ev.preventDefault();
+            const file = imageFile.files && imageFile.files[0];
+            if (!file) { t.warn('Seleciona uma imagem.'); return; }
+            uploadBtn.disabled = true;
+            const prev = uploadBtn.textContent;
+            uploadBtn.textContent = 'A carregar...';
+            try {
+              const formData = new FormData();
+              formData.append('file', file);
+              const token = sessionStorage.getItem('nd_token');
+              const res = await fetch(uploadForm.action, {
+                method: 'POST',
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+                body: formData
+              });
+              if (res.ok) {
+                const data = await res.json();
+                uploadedImageUrl = data.url || data.path || null;
+                if (uploadedImageUrl) {
+                  previewImg.src = uploadedImageUrl;
+                  show(uploadedPreview);
+                  t.success('Imagem carregada.');
+                } else {
+                  t.warn('Imagem carregada, mas sem URL de retorno.');
+                }
+              } else {
+                const text = await res.text().catch(()=>null);
+                t.error(text || 'Erro ao carregar imagem.');
+              }
+            } catch (err) {
+              t.error('Erro de rede no upload.');
+            } finally {
+              uploadBtn.disabled = false;
+              uploadBtn.textContent = prev;
+            }
+          });
         }
-      })();
 
-      // Simple confirm fallback
-      window.confirm = window.confirm || function(msg){ return true; };
+        if (useImageBtn) useImageBtn.addEventListener('click', () => {
+          if (!uploadedImageUrl) { t.warn('Nenhuma imagem disponível.'); return; }
+          $('#article-excerpt').value = $('#article-excerpt').value + `\nImagem destaque: ${uploadedImageUrl}`;
+          t.info('Imagem adicionada ao resumo. Podes ajustar no campo de conteúdo.');
+        });
 
-    }); // DOMContentLoaded
+        // Preview modal handlers
+        function openPreview(title, body) {
+          if (!previewModal) return;
+          previewContent.innerHTML = `<article><h1>${title}</h1><div>${body}</div></article>`;
+          previewModal.hidden = false;
+          previewModal.style.display = 'flex';
+          previewModal.setAttribute('aria-hidden','false');
+          if (closePreview) closePreview.focus();
+        }
+        function doClosePreview() {
+          if (!previewModal) return;
+          previewModal.hidden = true;
+          previewModal.style.display = 'none';
+          previewModal.setAttribute('aria-hidden','true');
+          previewContent.innerHTML = '';
+        }
+        if (previewTrigger) {
+          previewTrigger.addEventListener('click', () => {
+            const title = escapeHtml($('#article-title').value || 'Sem título');
+            const body = $('#article-body').value || '';
+            openPreview(title, body);
+          });
+        }
+        if (closePreview) closePreview.addEventListener('click', doClosePreview);
+        if (previewModal) {
+          previewModal.addEventListener('click', (ev) => { if (ev.target === previewModal) doClosePreview(); });
+        }
+        document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && previewModal && !previewModal.hidden) doClosePreview(); });
+
+        // Login modal (menu-driven) initialization
+        function initLoginModal() {
+          const openBtn = document.getElementById('menu-login-btn');
+          if (!openBtn || !loginModal || !loginModalClose || !loginFormModal) return;
+
+          function showModal() {
+            loginModal.hidden = false;
+            loginModal.style.display = 'flex';
+            loginModal.setAttribute('aria-hidden','false');
+            const first = loginModal.querySelector('input,button');
+            if (first) first.focus();
+          }
+          function hideModal() {
+            loginModal.hidden = true;
+            loginModal.style.display = 'none';
+            loginModal.setAttribute('aria-hidden','true');
+            loginMsg.textContent = '';
+            loginFormModal.reset();
+          }
+
+          openBtn.addEventListener('click', showModal);
+          loginModalClose.addEventListener('click', hideModal);
+          loginModal.addEventListener('click', (ev) => { if (ev.target === loginModal) hideModal(); });
+          document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !loginModal.hidden) hideModal(); });
+
+          loginFormModal.addEventListener('submit', async (ev) => {
+            ev.preventDefault(); ev.stopPropagation();
+            loginMsg.textContent = '';
+            const token = (loginTokenModal && loginTokenModal.value || '').trim();
+            if (!token) { loginMsg.textContent = 'Insere o token.'; return; }
+            const submitBtn = document.getElementById('login-submit');
+            const prev = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'A autenticar...';
+            try {
+              const res = await fetch(loginFormModal.action, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+                redirect: 'manual'
+              });
+              if (res.status === 302 || res.status === 303) {
+                sessionStorage.setItem('nd_token', token);
+                hideModal();
+                location.reload();
+                return;
+              }
+              if (res.ok) {
+                sessionStorage.setItem('nd_token', token);
+                hideModal();
+                location.reload();
+              } else {
+                const text = await res.text().catch(()=>null);
+                loginMsg.textContent = text || 'Token inválido.';
+              }
+            } catch (err) {
+              loginMsg.textContent = 'Erro de rede ao autenticar.';
+            } finally {
+              submitBtn.disabled = false;
+              submitBtn.textContent = prev;
+            }
+          });
+        }
+
+        // Initialize login modal when menu is ready or immediately if present
+        if (document.getElementById('menu-login-btn')) initLoginModal();
+        else {
+          document.addEventListener('menu:loaded', initLoginModal);
+          let tries = 0;
+          const iv = setInterval(()=> {
+            if (document.getElementById('menu-login-btn')) { clearInterval(iv); initLoginModal(); }
+            if (++tries > 8) clearInterval(iv);
+          }, 300);
+        }
+
+        // Ensure toasts.js loaded if not present
+        (function ensureToastsLoaded(){
+          if (!window.toastSuccess) {
+            const s = document.querySelector('script[src="/js/toasts.js"]');
+            if (!s) {
+              const sc = document.createElement('script');
+              sc.src = '/js/toasts.js';
+              sc.defer = true;
+              document.head.appendChild(sc);
+            }
+          }
+        })();
+
+        // Simple confirm fallback
+        window.confirm = window.confirm || function(msg){ return true; };
+      } // end initAll
+
+      // Run initAll after DOMContentLoaded
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAll);
+      } else {
+        setTimeout(initAll, 0);
+      }
+    })();
   </script>
 </body>
 </html>
