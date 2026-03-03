@@ -1,4 +1,3 @@
-// src/server.ts
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -10,7 +9,13 @@ import multer from 'multer';
 import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 import helmet from 'helmet';
+import { fileURLToPath } from 'url';
 
+// Compatibilidade ESM: definir __filename e __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// resto do ficheiro continua...
 dotenvIfNeeded();
 function dotenvIfNeeded() {
   try {
