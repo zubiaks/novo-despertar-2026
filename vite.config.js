@@ -3,16 +3,9 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:4000',
-        changeOrigin: true,
-        secure: false
-      },
-      '/uploads': {
-        target: 'http://localhost:4000',
-        changeOrigin: true,
-        secure: false
-      }
+      '/auth': { target: 'http://localhost:4000', changeOrigin: true, secure: false },
+      '/api':  { target: 'http://localhost:4000', changeOrigin: true, secure: false },
+      '/uploads': { target: 'http://localhost:4000', changeOrigin: true, secure: false }
     }
   }
 });
