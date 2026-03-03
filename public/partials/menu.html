@@ -12,50 +12,7 @@
       <li role="none"><a role="menuitem" href="/artigos.html" class="nav-link">Artigos</a></li>
       <li role="none"><a role="menuitem" href="/sobre.html" class="nav-link">Sobre</a></li>
       <li role="none"><a role="menuitem" href="/admin.html" class="nav-link">Admin</a></li>
+      <li role="none"><button id="menu-login-btn" class="btn btn-outline" type="button">Entrar</button></li>
     </ul>
   </div>
 </nav>
-
-<script>
-  (function(){
-    const toggle = document.getElementById('nav-toggle');
-    const links = document.getElementById('nav-links');
-    if (!toggle || !links) return;
-
-    function openMenu() {
-      links.style.display = 'flex';
-      links.setAttribute('aria-hidden', 'false');
-      toggle.setAttribute('aria-expanded', 'true');
-      document.body.classList.add('site-nav-open');
-    }
-    function closeMenu() {
-      links.style.display = '';
-      links.setAttribute('aria-hidden', 'true');
-      toggle.setAttribute('aria-expanded', 'false');
-      document.body.classList.remove('site-nav-open');
-    }
-
-    toggle.addEventListener('click', () => {
-      const expanded = toggle.getAttribute('aria-expanded') === 'true';
-      if (expanded) closeMenu(); else openMenu();
-    });
-
-    document.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true') closeMenu();
-    });
-
-    links.addEventListener('click', (ev) => {
-      if (ev.target && ev.target.matches('a')) closeMenu();
-    });
-
-    window.addEventListener('resize', () => {
-      if (window.innerWidth > 720) {
-        links.style.display = '';
-        links.setAttribute('aria-hidden', 'false');
-        toggle.setAttribute('aria-expanded', 'false');
-      } else {
-        links.setAttribute('aria-hidden', 'true');
-      }
-    });
-  })();
-</script>

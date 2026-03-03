@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Como começar uma prática diária — Novo Despertar</title>
-  <meta name="description" content="Guia prático para iniciar uma prática diária de presença e bem-estar." />
+  <meta name="description" content="Guia prático para iniciar uma prática diária de presença e bem‑estar." />
   <link rel="stylesheet" href="/css/theme.css?v=1" />
   <link rel="icon" href="/favicon.ico" />
 </head>
@@ -32,7 +32,7 @@
         <p>Associa a prática a algo que já fazes (ex.: depois de escovar os dentes). O gatilho ajuda a automatizar o comportamento.</p>
 
         <h2>3. Mantém a prática simples</h2>
-        <p>Foca-te na respiração, numa curta meditação guiada ou num exercício de gratidão. Evita metas ambiciosas no início.</p>
+        <p>Foca‑te na respiração, numa curta meditação guiada ou num exercício de gratidão. Evita metas ambiciosas no início.</p>
 
         <h2>4. Regista e celebra pequenas vitórias</h2>
         <p>Marca os dias em que praticaste; celebra 7 dias seguidos com algo simbólico.</p>
@@ -50,7 +50,7 @@
 
         <section aria-labelledby="cta" style="margin-top:1.25rem">
           <h3 id="cta">Experimenta agora</h3>
-          <p>Faz um teste de 3 minutos: senta-te, respira fundo e conta as respirações. Quando terminares, clica em "Concluído".</p>
+          <p>Faz um teste de 3 minutos: senta‑te, respira fundo e conta as respirações. Quando terminares, clica em "Concluído".</p>
           <button id="practice-start" class="btn">Iniciar 3 minutos</button>
           <button id="practice-done" class="btn btn-outline" style="margin-left:0.5rem">Concluído</button>
         </section>
@@ -61,7 +61,6 @@
       <section class="subscribe" style="margin-top:1.5rem">
         <h4>Subscrever</h4>
         <p>Recebe novidades por email sobre novos artigos e eventos.</p>
-
         <form id="subscribe-form" action="/api/subscribe" method="post" novalidate>
           <label for="subscribe-email" class="visually-hidden">Email</label>
           <input id="subscribe-email" name="email" type="email" placeholder="o teu email" required />
@@ -73,23 +72,21 @@
 
   <!-- Footer partial -->
   <div id="site-footer"></div>
-
-  <!-- Fallback footer loader (caso menu-loader não carregue footer) -->
   <script>
-    (async () => {
+    (async function loadFooter(){
       const el = document.getElementById('site-footer');
       if (!el) return;
       try {
         const r = await fetch('/partials/footer.html', { cache: 'no-cache' });
         if (r.ok) el.innerHTML = await r.text();
-        else el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
+        else el.innerHTML = '<footer class="site-footer"><div class="container"><p>© Novo Despertar — 2026</p></div></footer>';
       } catch (e) {
-        el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
+        el.innerHTML = '<footer class="site-footer"><div class="container"><p>© Novo Despertar — 2026</p></div></footer>';
       }
     })();
   </script>
 
-  <!-- Interações locais: prática guiada curta, subscribe e botões usando toasts -->
+  <!-- Interações locais: prática guiada curta e subscribe -->
   <script>
     (function(){
       // Prática guiada simples (timer)
@@ -100,7 +97,7 @@
       function startPractice(durationSec = 180) {
         if (practiceTimer) return;
         if (window.toastInfo) toastInfo('Iniciando prática de 3 minutos...');
-        else alert('Iniciando prática de 3 minutos...');
+        else console.info('Iniciando prática de 3 minutos...');
         practiceTimer = setTimeout(() => {
           practiceTimer = null;
           if (window.toastSuccess) toastSuccess('Prática concluída — bem feito!');
@@ -123,14 +120,15 @@
       startBtn && startBtn.addEventListener('click', () => startPractice(180));
       doneBtn && doneBtn.addEventListener('click', completePracticeNow);
 
-      // Subscribe form: usa toasts quando disponíveis
+      // Subscribe form: usa fetch e toasts quando disponíveis
       const form = document.getElementById('subscribe-form');
       if (form) {
         form.addEventListener('submit', async (ev) => {
           ev.preventDefault();
-          const email = form.email.value.trim();
+          const email = (form.email.value || '').trim();
           if (!email) {
-            if (window.toastWarn) { toastWarn('Introduz um email válido.'); } else { alert('Introduz um email válido.'); }
+            if (window.toastWarn) toastWarn('Introduz um email válido.');
+            else alert('Introduz um email válido.');
             return;
           }
           try {
@@ -140,15 +138,18 @@
               body: JSON.stringify({ email })
             });
             if (res.ok) {
-              if (window.toastSuccess) { toastSuccess('Obrigado — subscrito!'); } else { alert('Obrigado — subscrito!'); }
+              if (window.toastSuccess) toastSuccess('Obrigado — subscrito!');
+              else alert('Obrigado — subscrito!');
               form.reset();
             } else {
               const t = await res.text().catch(()=>null);
               const msg = t || 'Erro ao subscrever.';
-              if (window.toastError) toastError(msg); else alert(msg);
+              if (window.toastError) toastError(msg);
+              else alert(msg);
             }
           } catch (err) {
-            if (window.toastError) toastError('Erro de rede.'); else alert('Erro de rede.');
+            if (window.toastError) toastError('Erro de rede.');
+            else alert('Erro de rede.');
           }
         });
       }

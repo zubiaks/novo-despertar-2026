@@ -4,143 +4,158 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Temas — Novo Despertar</title>
-  <meta name="description" content="Lista de temas e categorias do site Novo Despertar." />
+  <meta name="description" content="Explora os temas do Novo Despertar: espiritualidade, práticas, saúde mental e história." />
   <link rel="stylesheet" href="/css/theme.css?v=1" />
   <link rel="icon" href="/favicon.ico" />
+  <style>
+    .themes-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-top:1rem }
+    .theme-card { background:#fff;padding:1rem;border-radius:8px;box-shadow:var(--card-shadow);display:flex;flex-direction:column;gap:0.5rem;min-height:120px;align-items:flex-start }
+    .theme-card h3 { margin:0 }
+    .theme-desc { color:#475569;font-size:0.95rem }
+    .controls { display:flex;gap:0.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem }
+    .controls input[type="search"]{padding:0.5rem;border-radius:6px;border:1px solid rgba(15,23,36,0.06);min-width:220px}
+    .placeholder { background:linear-gradient(90deg,#f8fafc,#eef2ff);height:120px;border-radius:6px;width:100% }
+    @media (max-width:720px){ .controls{flex-direction:column;align-items:stretch} }
+  </style>
 </head>
 <body>
-  <!-- Menu centralizado (partial carregado por /js/menu-loader.js) -->
   <div id="site-menu"></div>
   <script src="/js/menu-loader.js" defer></script>
   <script src="/js/toasts.js" defer></script>
 
   <main class="container" id="main" role="main">
-    <header class="page-header">
+    <header class="page-header" style="margin-bottom:1rem">
       <h1>Temas</h1>
-      <p class="lead">Explora os temas e categorias onde publicamos artigos, reflexões e recursos.</p>
+      <p class="lead">Navega por temas e encontra artigos, guias e recursos agrupados por assunto.</p>
     </header>
 
-    <section id="themes-list" aria-labelledby="themes-heading">
-      <h2 id="themes-heading" class="visually-hidden">Lista de temas</h2>
+    <section aria-labelledby="controls-heading" style="margin-bottom:1rem">
+      <h2 id="controls-heading" class="visually-hidden">Controles de pesquisa e filtro</h2>
+      <div class="controls" role="region" aria-label="Pesquisa e filtros">
+        <form id="search-form" style="display:flex;gap:0.5rem;align-items:center" role="search">
+          <label for="q" class="visually-hidden">Pesquisar temas</label>
+          <input id="q" name="q" type="search" placeholder="Pesquisar temas..." aria-label="Pesquisar temas" />
+          <button id="search-btn" class="btn" type="submit">Pesquisar</button>
+          <button id="clear-btn" class="btn btn-outline" type="button">Limpar</button>
+        </form>
 
-      <ul class="themes-grid" role="list">
-        <li class="theme-card" role="listitem">
-          <a href="/artigos.html?tema=espiritualidade" class="theme-link" aria-labelledby="t-espiritualidade">
-            <div class="theme-thumb" aria-hidden="true">
-              <img src="/assets/themes/espiritualidade.jpg" alt="" loading="lazy" width="480" height="320" />
-            </div>
-            <div class="theme-body">
-              <h3 id="t-espiritualidade" class="theme-title">Espiritualidade</h3>
-              <p class="theme-excerpt">Reflexões, práticas e textos para o crescimento interior.</p>
-            </div>
-          </a>
-        </li>
-
-        <li class="theme-card" role="listitem">
-          <a href="/artigos.html?tema=saude-mental" class="theme-link" aria-labelledby="t-saude-mental">
-            <div class="theme-thumb" aria-hidden="true">
-              <img src="/assets/themes/saude-mental.jpg" alt="" loading="lazy" width="480" height="320" />
-            </div>
-            <div class="theme-body">
-              <h3 id="t-saude-mental" class="theme-title">Saúde Mental</h3>
-              <p class="theme-excerpt">Estratégias, entrevistas e recursos para bem-estar emocional.</p>
-            </div>
-          </a>
-        </li>
-
-        <li class="theme-card" role="listitem">
-          <a href="/artigos.html?tema=praticas" class="theme-link" aria-labelledby="t-praticas">
-            <div class="theme-thumb" aria-hidden="true">
-              <img src="/assets/themes/praticas.jpg" alt="" loading="lazy" width="480" height="320" />
-            </div>
-            <div class="theme-body">
-              <h3 id="t-praticas" class="theme-title">Práticas</h3>
-              <p class="theme-excerpt">Exercícios, meditações e rotinas para aplicar no dia a dia.</p>
-            </div>
-          </a>
-        </li>
-
-        <li class="theme-card" role="listitem">
-          <a href="/artigos.html?tema=historia" class="theme-link" aria-labelledby="t-historia">
-            <div class="theme-thumb" aria-hidden="true">
-              <img src="/assets/themes/historia.jpg" alt="" loading="lazy" width="480" height="320" />
-            </div>
-            <div class="theme-body">
-              <h3 id="t-historia" class="theme-title">História</h3>
-              <p class="theme-excerpt">Contexto e histórias que inspiram a nossa jornada.</p>
-            </div>
-          </a>
-        </li>
-      </ul>
+        <div style="margin-left:auto;color:#475569;font-size:0.95rem" id="results-count" aria-live="polite"></div>
+      </div>
     </section>
 
-    <aside class="sidebar" aria-label="Complementos">
-      <section class="subscribe">
-        <h4>Subscrever</h4>
-        <p>Recebe novidades por email sobre novos artigos e eventos.</p>
-
-        <form id="subscribe-form" action="/api/subscribe" method="post" novalidate>
-          <label for="subscribe-email" class="visually-hidden">Email</label>
-          <input id="subscribe-email" name="email" type="email" placeholder="o teu email" required />
-          <button type="submit" class="btn">Subscrever</button>
-        </form>
-      </section>
-    </aside>
+    <section id="themes-section" aria-labelledby="themes-heading">
+      <h2 id="themes-heading" class="visually-hidden">Lista de temas</h2>
+      <div id="themes-grid" class="themes-grid" aria-live="polite">
+        <!-- Cards carregados dinamicamente -->
+      </div>
+    </section>
   </main>
 
-  <!-- Footer partial -->
   <div id="site-footer"></div>
+
   <script>
-    (async () => {
-      const el = document.getElementById('site-footer');
-      if (!el) return;
-      try {
-        const r = await fetch('/partials/footer.html', { cache: 'no-cache' });
-        if (r.ok) el.innerHTML = await r.text();
-        else el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
-      } catch (e) {
-        el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
+    (function () {
+      const $ = (s) => document.querySelector(s);
+      const themesGrid = document.getElementById('themes-grid');
+      const searchForm = document.getElementById('search-form');
+      const qInput = document.getElementById('q');
+      const clearBtn = document.getElementById('clear-btn');
+      const resultsCount = document.getElementById('results-count');
+
+      const t = {
+        info: (m) => window.toastInfo ? toastInfo(m) : console.info(m),
+        error: (m) => window.toastError ? toastError(m) : console.error(m)
+      };
+
+      function escapeHtml(s){ return String(s || '').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]); }
+
+      function createThemeCard(theme) {
+        const aHref = theme.url || ('/artigos.html?tema=' + encodeURIComponent(theme.id));
+        const div = document.createElement('article');
+        div.className = 'theme-card';
+        div.innerHTML = `
+          <a href="${escapeHtml(aHref)}" style="text-decoration:none;color:inherit;display:block;width:100%">
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              <div style="width:64px;height:64px;border-radius:8px;overflow:hidden;flex:0 0 64px">
+                <img src="${escapeHtml(theme.image || '/images/placeholder-article.jpg')}" alt="" style="width:100%;height:100%;object-fit:cover" onerror="this.onerror=null;this.src='/images/placeholder-article.jpg'">
+              </div>
+              <div style="flex:1">
+                <h3>${escapeHtml(theme.title)}</h3>
+                <div class="theme-desc">${escapeHtml(theme.description || '')}</div>
+              </div>
+            </div>
+          </a>
+        `;
+        return div;
       }
-    })();
-  </script>
 
-  <!-- Interações locais: subscribe form usando toasts em vez de alert() -->
-  <script>
-    (function(){
-      const form = document.getElementById('subscribe-form');
-      if (!form) return;
+      async function loadThemes(q = '') {
+        themesGrid.innerHTML = '<div style="grid-column:1/-1;padding:1rem">A carregar temas…</div>';
+        try {
+          const params = new URLSearchParams();
+          if (q) params.set('q', q);
+          const res = await fetch('/api/themes' + (params.toString() ? '?' + params.toString() : ''), { cache: 'no-cache' });
+          if (!res.ok) {
+            t.error('Não foi possível carregar temas.');
+            themesGrid.innerHTML = '<div style="grid-column:1/-1;padding:1rem">Erro ao carregar temas.</div>';
+            resultsCount.textContent = '';
+            return;
+          }
+          const data = await res.json();
+          const items = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+          renderThemes(items);
+          resultsCount.textContent = `${items.length} tema${items.length===1?'':'s'}`;
+        } catch (err) {
+          console.error(err);
+          t.error('Erro de rede ao carregar temas.');
+          themesGrid.innerHTML = '<div style="grid-column:1/-1;padding:1rem">Erro de rede ao carregar temas.</div>';
+          resultsCount.textContent = '';
+        }
+      }
 
-      form.addEventListener('submit', async (ev) => {
-        ev.preventDefault();
-        const email = form.email.value.trim();
-        if (!email) {
-          if (window.toastWarn) { toastWarn('Introduz um email válido.'); }
-          else { alert('Introduz um email válido.'); }
+      function renderThemes(items) {
+        themesGrid.innerHTML = '';
+        if (!items || items.length === 0) {
+          themesGrid.innerHTML = '<div style="grid-column:1/-1;padding:1rem">Nenhum tema encontrado.</div>';
           return;
         }
+        items.forEach(t => themesGrid.appendChild(createThemeCard(t)));
+      }
 
-        try {
-          const res = await fetch(form.action, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
-          });
-
-          if (res.ok) {
-            if (window.toastSuccess) { toastSuccess('Obrigado — subscrito!'); }
-            else { alert('Obrigado — subscrito!'); }
-            form.reset();
-          } else {
-            const text = await res.text().catch(()=>null);
-            const msg = text || 'Erro ao subscrever.';
-            if (window.toastError) { toastError(msg); }
-            else { alert(msg); }
-          }
-        } catch (err) {
-          if (window.toastError) { toastError('Erro de rede.'); }
-          else { alert('Erro de rede.'); }
-        }
+      // Events
+      searchForm.addEventListener('submit', (ev) => {
+        ev.preventDefault();
+        loadThemes(qInput.value.trim());
       });
+      clearBtn.addEventListener('click', () => {
+        qInput.value = '';
+        loadThemes('');
+      });
+
+      // Init: wait for menu if necessary
+      function init() {
+        if (!document.getElementById('site-menu') || document.getElementById('site-menu').querySelector('nav')) {
+          loadThemes('');
+        } else {
+          document.addEventListener('menu:loaded', () => loadThemes(''));
+        }
+      }
+
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+      else setTimeout(init, 0);
+
+      // Footer loader (robust)
+      (async function loadFooter(){
+        const el = document.getElementById('site-footer');
+        if (!el) return;
+        try {
+          const r = await fetch('/partials/footer.html', { cache: 'no-cache' });
+          if (r.ok) el.innerHTML = await r.text();
+          else el.innerHTML = '<footer class="site-footer"><div class="container"><p>© Novo Despertar — 2026</p></div></footer>';
+        } catch (e) {
+          el.innerHTML = '<footer class="site-footer"><div class="container"><p>© Novo Despertar — 2026</p></div></footer>';
+        }
+      })();
     })();
   </script>
 </body>

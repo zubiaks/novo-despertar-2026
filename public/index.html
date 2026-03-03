@@ -3,137 +3,163 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Novo Despertar — Artigos e Reflexões</title>
-  <meta name="description" content="Artigos, práticas e recursos para crescimento pessoal e bem-estar." />
+  <title>Novo Despertar — Textos e práticas para viver com presença</title>
+  <meta name="description" content="Textos, práticas e recursos para viver com mais presença e sentido." />
   <link rel="stylesheet" href="/css/theme.css?v=1" />
   <link rel="icon" href="/favicon.ico" />
+  <style>
+    /* Pequenos estilos locais para a homepage */
+    .hero { background:linear-gradient(180deg,#fff,#f8fafc); padding:3rem 0; }
+    .hero-inner { max-width:1100px; margin:0 auto; display:flex; gap:2rem; align-items:center; }
+    .hero-copy { flex:1 }
+    .hero-cta { display:flex; gap:0.5rem; margin-top:1rem }
+    .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem; margin-top:1.5rem }
+    .card { background:#fff;padding:1rem;border-radius:8px;box-shadow:var(--card-shadow);display:flex;flex-direction:column;gap:0.5rem }
+    .card img { width:100%;height:160px;object-fit:cover;border-radius:6px }
+    .grid-two { display:grid; grid-template-columns:1fr 320px; gap:1rem; align-items:start }
+    @media (max-width:820px){ .hero-inner{flex-direction:column;align-items:flex-start} .grid-two{grid-template-columns:1fr} }
+  </style>
 </head>
 <body>
-  <!-- Menu (partial carregado por menu-loader.js) -->
   <div id="site-menu"></div>
   <script src="/js/menu-loader.js" defer></script>
   <script src="/js/toasts.js" defer></script>
 
   <main class="container" id="main" role="main">
-    <header class="hero" aria-labelledby="site-title">
-      <h1 id="site-title" class="hero-title">Novo Despertar</h1>
-      <p class="hero-lead">Textos, práticas e recursos para viver com mais presença e sentido.</p>
-      <p><a class="btn" href="/temas.html">Explorar Temas</a> <a class="btn btn-outline" href="/artigos.html">Ver Artigos</a></p>
-    </header>
-
-    <section aria-labelledby="latest-heading">
-      <h2 id="latest-heading" class="visually-hidden">Últimos artigos</h2>
-
-      <ul class="articles-grid" role="list" id="latest-articles">
-        <!-- Artigos carregados dinamicamente ou colocados estaticamente -->
-        <li class="article-card" role="listitem">
-          <a href="/artigo-exemplo.html" class="article-link">
-            <div class="article-thumb" aria-hidden="true">
-              <img src="/assets/articles/exemplo.jpg" alt="" loading="lazy" width="640" height="360" />
-            </div>
-            <div class="article-body">
-              <h3 class="article-title">Como começar uma prática diária</h3>
-              <p class="article-excerpt">Pequenos passos para criar uma rotina que sustente presença e bem-estar.</p>
-            </div>
-          </a>
-        </li>
-        <li class="article-card" role="listitem">
-          <a href="/artigo-exemplo-2.html" class="article-link">
-            <div class="article-thumb" aria-hidden="true">
-              <img src="/assets/articles/exemplo2.jpg" alt="" loading="lazy" width="640" height="360" />
-            </div>
-            <div class="article-body">
-              <h3 class="article-title">Respiração consciente: guia prático</h3>
-              <p class="article-excerpt">Exercícios simples para reduzir ansiedade e aumentar foco.</p>
-            </div>
-          </a>
-        </li>
-      </ul>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <h1 id="hero-title">Novo Despertar</h1>
+          <p class="lead">Textos, práticas e recursos para viver com mais presença e sentido.</p>
+          <div class="hero-cta">
+            <a class="btn" href="/artigos.html">Explorar artigos</a>
+            <a class="btn btn-outline" href="/temas.html">Ver temas</a>
+          </div>
+        </div>
+        <div class="hero-media" aria-hidden="true">
+          <img src="/images/hero.jpg" alt="" style="width:320px;border-radius:8px;object-fit:cover" onerror="this.onerror=null;this.src='/images/placeholder-article.jpg'">
+        </div>
+      </div>
     </section>
 
-    <aside class="sidebar" aria-label="Complementos">
-      <section class="subscribe">
-        <h4>Subscrever</h4>
-        <p>Recebe novidades por email sobre novos artigos e eventos.</p>
+    <section aria-labelledby="latest-heading" style="margin-top:1.5rem">
+      <h2 id="latest-heading">Últimos artigos</h2>
+      <div id="latest-cards" class="cards" aria-live="polite">
+        <!-- Cards carregados dinamicamente -->
+      </div>
+    </section>
 
-        <form id="subscribe-form" action="/api/subscribe" method="post" novalidate>
-          <label for="subscribe-email" class="visually-hidden">Email</label>
-          <input id="subscribe-email" name="email" type="email" placeholder="o teu email" required />
-          <button type="submit" class="btn">Subscrever</button>
-        </form>
-      </section>
+    <section aria-labelledby="about-heading" style="margin-top:1.5rem">
+      <h2 id="about-heading">Sobre</h2>
+      <div class="grid-two">
+        <div>
+          <p>O Novo Despertar partilha textos e práticas para cultivar presença, bem‑estar e sentido. Publicamos artigos, guias práticos e recursos para quem procura uma vida mais atenta.</p>
+          <p>Subscreve para receber novidades e novos artigos diretamente no teu email.</p>
 
-      <section class="share" aria-labelledby="share-heading" style="margin-top:1.25rem">
-        <h4 id="share-heading">Partilhar</h4>
-        <p>Partilha esta página com quem possa beneficiar.</p>
-        <button id="copy-link" class="btn btn-outline">Copiar link</button>
-      </section>
-    </aside>
+          <form id="subscribe-form" action="/api/subscribe" method="post" novalidate style="margin-top:0.75rem;display:flex;gap:0.5rem;align-items:center">
+            <label for="subscribe-email" class="visually-hidden">Email</label>
+            <input id="subscribe-email" name="email" type="email" placeholder="o teu email" required style="flex:1;padding:0.5rem;border-radius:6px;border:1px solid rgba(15,23,36,0.06)" />
+            <button type="submit" class="btn">Subscrever</button>
+          </form>
+        </div>
+
+        <aside style="background:#fff;padding:1rem;border-radius:8px;box-shadow:var(--card-shadow)">
+          <h4>Temas em destaque</h4>
+          <ul style="margin:0;padding-left:1rem">
+            <li><a href="/temas.html?tema=espiritualidade">Espiritualidade</a></li>
+            <li><a href="/temas.html?tema=saude-mental">Saúde Mental</a></li>
+            <li><a href="/temas.html?tema=praticas">Práticas</a></li>
+            <li><a href="/temas.html?tema=historia">História</a></li>
+          </ul>
+        </aside>
+      </div>
+    </section>
   </main>
 
-  <!-- Footer partial -->
   <div id="site-footer"></div>
 
-  <!-- Footer loader (fallback caso menu-loader não carregue footer) -->
   <script>
-    (async () => {
-      const el = document.getElementById('site-footer');
-      if (!el) return;
-      try {
-        const r = await fetch('/partials/footer.html', { cache: 'no-cache' });
-        if (r.ok) el.innerHTML = await r.text();
-        else el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
-      } catch (e) {
-        el.innerHTML = '<footer class="site-footer"><div class="container"><p>&copy; Novo Despertar — 2026</p></div></footer>';
-      }
-    })();
-  </script>
+    (function () {
+      const $ = (s) => document.querySelector(s);
+      const latestCards = document.getElementById('latest-cards');
+      const subscribeForm = document.getElementById('subscribe-form');
 
-  <!-- Interações locais: subscribe + copiar link usando toasts -->
-  <script>
-    (function(){
-      // Subscribe form: usa toasts quando disponíveis
-      const form = document.getElementById('subscribe-form');
-      if (form) {
-        form.addEventListener('submit', async (ev) => {
+      const t = {
+        success: (m) => window.toastSuccess ? toastSuccess(m) : console.info(m),
+        error: (m) => window.toastError ? toastError(m) : console.error(m),
+        info: (m) => window.toastInfo ? toastInfo(m) : console.info(m)
+      };
+
+      function escapeHtml(s){ return String(s || '').replace(/[&<>"']/g, (m)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[m]); }
+
+      function cardHtml(a){
+        const img = a.image || '/images/placeholder-article.jpg';
+        const url = a.url || ('/artigo.html?id=' + encodeURIComponent(a.id));
+        return `<article class="card">
+          <a href="${escapeHtml(url)}" style="text-decoration:none;color:inherit">
+            <img loading="lazy" src="${escapeHtml(img)}" alt="${escapeHtml(a.title)}" onerror="this.onerror=null;this.src='/images/placeholder-article.jpg'">
+            <h3 style="margin:0.5rem 0 0">${escapeHtml(a.title)}</h3>
+            <p style="margin:0.25rem 0;color:#64748b;font-size:0.95rem">${escapeHtml(a.excerpt || (a.body||'').slice(0,120) + '...')}</p>
+          </a>
+        </article>`;
+      }
+
+      async function loadLatest() {
+        if (!latestCards) return;
+        latestCards.innerHTML = '<div style="grid-column:1/-1;padding:1rem">A carregar…</div>';
+        try {
+          const res = await fetch('/api/articles?limit=6&sort=published_at:desc', { cache: 'no-cache' });
+          if (!res.ok) { latestCards.innerHTML = '<div style="grid-column:1/-1;padding:1rem">Não foi possível carregar artigos.</div>'; return; }
+          const data = await res.json();
+          const items = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+          if (!items.length) { latestCards.innerHTML = '<div style="grid-column:1/-1;padding:1rem">Nenhum artigo encontrado.</div>'; return; }
+          latestCards.innerHTML = items.map(cardHtml).join('');
+        } catch (err) {
+          console.error(err);
+          latestCards.innerHTML = '<div style="grid-column:1/-1;padding:1rem">Erro ao carregar artigos.</div>';
+        }
+      }
+
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', loadLatest);
+      else setTimeout(loadLatest, 0);
+
+      // Subscribe form
+      if (subscribeForm) {
+        subscribeForm.addEventListener('submit', async (ev) => {
           ev.preventDefault();
-          const email = form.email.value.trim();
-          if (!email) {
-            if (window.toastWarn) { toastWarn('Introduz um email válido.'); } else { alert('Introduz um email válido.'); }
-            return;
-          }
+          const email = (subscribeForm.email.value || '').trim();
+          if (!email) { t.warn ? t.warn('Introduz um email válido.') : console.warn('email inválido'); return; }
           try {
-            const res = await fetch(form.action, {
+            const res = await fetch(subscribeForm.action, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email })
             });
             if (res.ok) {
-              if (window.toastSuccess) { toastSuccess('Obrigado — subscrito!'); } else { alert('Obrigado — subscrito!'); }
-              form.reset();
+              t.success('Obrigado — subscrito!');
+              subscribeForm.reset();
             } else {
               const text = await res.text().catch(()=>null);
-              const msg = text || 'Erro ao subscrever.';
-              if (window.toastError) { toastError(msg); } else { alert(msg); }
+              t.error(text || 'Erro ao subscrever.');
             }
           } catch (err) {
-            if (window.toastError) { toastError('Erro de rede.'); } else { alert('Erro de rede.'); }
+            t.error('Erro de rede.');
           }
         });
       }
 
-      // Copiar link da página
-      const copyBtn = document.getElementById('copy-link');
-      if (copyBtn) {
-        copyBtn.addEventListener('click', async () => {
-          try {
-            await navigator.clipboard.writeText(location.href);
-            if (window.toastSuccess) { toastSuccess('Link copiado para a área de transferência.'); } else { alert('Link copiado.'); }
-          } catch (e) {
-            if (window.toastError) { toastError('Não foi possível copiar o link.'); } else { alert('Não foi possível copiar o link.'); }
-          }
-        });
-      }
+      // Footer loader (robust)
+      (async function loadFooter(){
+        const el = document.getElementById('site-footer');
+        if (!el) return;
+        try {
+          const r = await fetch('/partials/footer.html', { cache: 'no-cache' });
+          if (r.ok) el.innerHTML = await r.text();
+          else el.innerHTML = '<footer class="site-footer"><div class="container"><p>© Novo Despertar — 2026</p></div></footer>';
+        } catch (e) {
+          el.innerHTML = '<footer class="site-footer"><div class="container"><p>© Novo Despertar — 2026</p></div></footer>';
+        }
+      })();
     })();
   </script>
 </body>
