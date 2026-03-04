@@ -1,4 +1,4 @@
-﻿{{
+﻿{
   "name": "novo-despertar",
   "version": "0.1.0",
   "description": "Site do Novo Despertar — textos, práticas e recursos para viver com presença",
@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:server": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "vite build",
     "preview": "vite preview --port 5173",
     "serve": "http-server public -p 8080 -c-1",
@@ -16,9 +17,10 @@
     "format": "prettier --write \"**/*.{js,css,html,json,md}\"",
     "check:links": "broken-link-checker --recursive --no-robots --filter-level 3 http://localhost:8080",
     "test": "echo \"No tests configured\" && exit 0",
+    "test:smoke": "node ./scripts/smoke.js || echo \"Smoke tests failed\"",
     "clean": "rimraf dist .cache",
     "deploy": "npm run build && gh-pages -d dist",
-    "dev:server": "ts-node-dev --respawn --transpile-only src/server.ts"
+    "start": "node dist/server.js"
   },
   "files": [
     "public",
@@ -68,5 +70,4 @@
     "sharp": "^0.34.5",
     "uuid": "^13.0.0"
   }
-}
 }

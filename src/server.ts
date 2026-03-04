@@ -10,22 +10,14 @@ import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 import helmet from 'helmet';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
+
+// carregar .env (se existir)
+dotenv.config();
 
 // Compatibilidade ESM: definir __filename e __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// resto do ficheiro continua...
-dotenvIfNeeded();
-function dotenvIfNeeded() {
-  try {
-    // carrega .env se existir (opcional)
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    require('dotenv').config();
-  } catch (e) {
-    // ignore
-  }
-}
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
@@ -75,9 +67,15 @@ async function readJson(filePath: string): Promise<any> {
   }
 }
 
+/**
+ * writeJson: grava de forma atómica (escreve .tmp e renomeia)
+ * mantém compatibilidade com o comportamento anterior.
+ */
 async function writeJson(filePath: string, data: any) {
   await ensureDataDir();
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  const tmp = `${filePath}.tmp`;
+  await fs.writeFile(tmp, JSON.stringify(data, null, 2), 'utf-8');
+  await fs.rename(tmp, filePath);
 }
 
 /* ------------------------- Upload (multer + sharp) config ------------------------- */
@@ -106,9 +104,10 @@ async function findUserByEmail(email: string) {
 // Register
 app.post('/auth/register', wrap(async (req, res) => {
   const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: 'Missing email or password' });
+  console.log('POST /auth/register body:', { email: email ?? null });
+  if (!email || !password) return res.status(400).json({ message: 'Missing email or password' });
   const users = await readJson(USERS_FILE);
-  if (users.find((u: any) => u.email === email)) return res.status(409).json({ error: 'User exists' });
+  if (users.find((u: any) => u.email === email)) return res.status(409).json({ message: 'User exists' });
   const hash = await bcrypt.hash(password, 10);
   const user = { id: uuidv4(), email, passwordHash: hash, createdAt: new Date().toISOString() };
   users.unshift(user);
@@ -119,11 +118,12 @@ app.post('/auth/register', wrap(async (req, res) => {
 // Login
 app.post('/auth/login', wrap(async (req, res) => {
   const { email, password } = req.body || {};
-  if (!email || !password) return res.status(400).json({ error: 'Missing email or password' });
+  console.log('POST /auth/login body:', { email: email ?? null });
+  if (!email || !password) return res.status(400).json({ message: 'Missing email or password' });
   const user = await findUserByEmail(email);
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  if (!user) return res.status(401).json({ message: 'Invalid credentials' });
   const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+  if (!ok) return res.status(401).json({ message: 'Invalid credentials' });
   const token = createToken(user.id);
   res.json({ token, user: { id: user.id, email: user.email } });
 }));
@@ -131,15 +131,15 @@ app.post('/auth/login', wrap(async (req, res) => {
 /* ------------------------- Auth middleware ------------------------- */
 function authMiddleware(req: any, res: any, next: any) {
   const auth = req.headers.authorization;
-  if (!auth) return res.status(401).json({ error: 'Token missing' });
+  if (!auth) return res.status(401).json({ message: 'Token missing' });
   const parts = auth.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') return res.status(401).json({ error: 'Invalid token format' });
+  if (parts.length !== 2 || parts[0] !== 'Bearer') return res.status(401).json({ message: 'Invalid token format' });
   try {
     const decoded = jwt.verify(parts[1], JWT_SECRET) as any;
     req.userId = decoded.userId;
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Invalid token' });
+    return res.status(401).json({ message: 'Invalid token' });
   }
 }
 
@@ -147,8 +147,13 @@ function authMiddleware(req: any, res: any, next: any) {
 app.get('/auth/me', authMiddleware, wrap(async (req, res) => {
   const users = await readJson(USERS_FILE);
   const user = users.find((u: any) => u.id === req.userId);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!user) return res.status(404).json({ message: 'User not found' });
   res.json({ id: user.id, email: user.email });
+}));
+
+/* ------------------------- Protected test route ------------------------- */
+app.get('/api/protected', authMiddleware, wrap(async (req, res) => {
+  res.json({ ok: true, message: 'Acesso autorizado', userId: req.userId });
 }));
 
 /* ------------------------- Upload endpoint (processa com sharp) ------------------------- */
@@ -175,7 +180,7 @@ app.post('/api/upload', authMiddleware, wrap(async (req: any, res: any) => {
   });
 
   const file = req.file;
-  if (!file) return res.status(400).json({ error: 'No file uploaded' });
+  if (!file) return res.status(400).json({ message: 'No file uploaded' });
 
   await ensureDataDir();
   const baseName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -212,7 +217,7 @@ app.post('/api/upload', authMiddleware, wrap(async (req: any, res: any) => {
       await fs.writeFile(fallbackPath, file.buffer);
       return res.status(201).json({ url: `/uploads/${fallbackName}`, thumbUrl: null, filename: fallbackName });
     } catch (e) {
-      return res.status(500).json({ error: 'Failed to process image' });
+      return res.status(500).json({ message: 'Failed to process image' });
     }
   }
 }));
@@ -274,17 +279,17 @@ app.get('/api/articles/:id', wrap(async (req, res) => {
   const id = req.params.id;
   const articles = await readArticles();
   const a = articles.find((x: any) => x.id === id || x.slug === id);
-  if (!a) return res.status(404).json({ error: 'Not found' });
+  if (!a) return res.status(404).json({ message: 'Not found' });
   res.json(a);
 }));
 
 // Create article (protected)
 app.post('/api/articles', authMiddleware, wrap(async (req, res) => {
   const { title, date, theme, category, excerpt, slug, body, content, image } = req.body || {};
-  if (!title) return res.status(400).json({ error: 'Missing title' });
+  if (!title) return res.status(400).json({ message: 'Missing title' });
   const articles = await readArticles();
   const newSlug = slug || String(title).toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '');
-  if (articles.find((a: any) => a.slug === newSlug)) return res.status(409).json({ error: 'slug_exists' });
+  if (articles.find((a: any) => a.slug === newSlug)) return res.status(409).json({ message: 'slug_exists' });
   const item = {
     id: uuidv4(),
     title,
@@ -307,10 +312,10 @@ app.put('/api/articles/:id', authMiddleware, wrap(async (req, res) => {
   const { title, date, theme, category, excerpt, slug, body, content, image } = req.body || {};
   const articles = await readArticles();
   const idx = articles.findIndex((a: any) => a.id === id || a.slug === id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  if (idx === -1) return res.status(404).json({ message: 'Not found' });
   const existing = articles[idx];
   const newSlug = slug || (title ? String(title).toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '') : existing.slug);
-  if (articles.some((a: any, i: number) => i !== idx && a.slug === newSlug)) return res.status(409).json({ error: 'slug_exists' });
+  if (articles.some((a: any, i: number) => i !== idx && a.slug === newSlug)) return res.status(409).json({ message: 'slug_exists' });
   const updated = {
     ...existing,
     title: title ?? existing.title,
@@ -332,7 +337,7 @@ app.delete('/api/articles/:id', authMiddleware, wrap(async (req, res) => {
   const id = req.params.id;
   let articles = await readArticles();
   const idx = articles.findIndex((a: any) => a.id === id || a.slug === id);
-  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  if (idx === -1) return res.status(404).json({ message: 'Not found' });
   const removed = articles.splice(idx, 1)[0];
   await writeArticles(articles);
   res.json({ ok: true, removedId: removed.id });
@@ -350,9 +355,9 @@ app.use((req: any, res: any, next: any) => {
 app.use((err: any, _req: any, res: any, _next: any) => {
   console.error('Unhandled error:', err && err.stack ? err.stack : err);
   if (process.env.NODE_ENV === 'production') {
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ message: 'Server error' });
   } else {
-    res.status(err?.status || 500).json({ error: err?.message || 'Server error', stack: err?.stack });
+    res.status(err?.status || 500).json({ message: err?.message || 'Server error', stack: err?.stack });
   }
 });
 

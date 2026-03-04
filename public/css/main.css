@@ -19,11 +19,17 @@
   --space-1: 0.5rem;
   --space-2: 1rem;
   --space-3: 1.5rem;
+  --focus-outline: rgba(43,108,176,0.6);
 }
 
-/* Base */
+/* Reset / Base */
+*{box-sizing:border-box}
 html,body{height:100%;background:var(--color-bg);color:var(--color-text);font-family:var(--base-font);line-height:1.5;margin:0;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 .container{max-width:var(--max-width);margin:0 auto;padding:var(--space-3)}
+
+/* Skip link */
+.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
+.skip-link:focus{left:1rem;top:1rem;width:auto;height:auto;padding:0.5rem 0.75rem;background:#fff;border-radius:6px;box-shadow:var(--card-shadow);z-index:9999}
 
 /* Site nav */
 .site-nav{
@@ -37,14 +43,17 @@ html,body{height:100%;background:var(--color-bg);color:var(--color-text);font-fa
   position:relative;
   z-index:50;
 }
-.site-nav .brand{font-weight:700;color:var(--color-primary);text-decoration:none}
-.nav-links{display:flex;gap:1rem;list-style:none;padding:0;margin:0;align-items:center}
-.nav-links a{color:var(--color-text);text-decoration:none;padding:0.35rem 0.5rem;border-radius:6px}
-.nav-links a.active, .nav-links a:hover{background:rgba(43,108,176,0.08);color:var(--color-primary)}
-.nav-links button{background:transparent;border:0;padding:0.35rem 0.5rem;border-radius:6px;cursor:pointer}
+.nav-inner{display:flex;align-items:center;gap:1rem;justify-content:space-between;width:100%}
+.brand{font-weight:700;color:var(--color-primary);text-decoration:none}
+.nav-links{margin:0;padding:0;display:flex;gap:1rem;list-style:none;align-items:center}
+.nav-links a, .nav-links button{color:var(--color-text);text-decoration:none;padding:0.35rem 0.5rem;border-radius:6px;background:transparent;border:0;cursor:pointer;font:inherit}
+.nav-links a:focus, .nav-links button:focus{outline:3px solid var(--focus-outline);outline-offset:3px;border-radius:6px}
+.nav-links a.active, .nav-links a:hover, .nav-links button:hover{background:rgba(43,108,176,0.08);color:var(--color-primary)}
+.nav-toggle{border-radius:8px}
 
-/* Mobile nav toggle */
-#nav-toggle{display:none;background:transparent;border:1px solid rgba(15,23,36,0.06);padding:0.4rem 0.6rem;border-radius:8px;cursor:pointer}
+/* Mobile nav: hidden by default, shown via .open */
+.nav-links{display:flex}
+.nav-links.open{display:flex}
 .site-nav.open .nav-links{display:flex;flex-direction:column;position:absolute;left:0;right:0;top:56px;background:#fff;padding:1rem;box-shadow:var(--card-shadow);}
 
 /* Hero */
@@ -66,10 +75,17 @@ html,body{height:100%;background:var(--color-bg);color:var(--color-text);font-fa
 .btn:disabled{opacity:.6;cursor:not-allowed}
 .btn-outline{background:transparent;border:1px solid rgba(15,23,36,0.06);color:var(--color-text)}
 
-/* Sidebar / footer */
-.sidebar{margin-top:2rem}
+/* Footer */
 .site-footer{background:#0f1724;color:#fff;padding:2rem 0;margin-top:3rem}
-.site-footer a{color:var(--color-secondary)}
+.footer-grid{display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;justify-content:space-between}
+.footer-brand{min-width:220px;flex:1 1 320px}
+.footer-nav{flex:0 1 320px}
+.footer-links{list-style:none;padding:0;margin:0;display:flex;gap:0.75rem;flex-wrap:wrap}
+.footer-contact{flex:0 1 260px;min-width:220px}
+.footer-heading{margin:0 0 0.5rem}
+.muted{margin:0;color:var(--muted)}
+.small{font-size:0.9rem}
+.social-list{list-style:none;padding:0;margin:0;display:flex;gap:0.5rem}
 
 /* Toasts */
 .toast-root{position:fixed;right:1rem;bottom:1rem;z-index:var(--toast-z);display:flex;flex-direction:column;gap:0.5rem;pointer-events:none}
@@ -83,24 +99,12 @@ html,body{height:100%;background:var(--color-bg);color:var(--color-text);font-fa
 .toast .msg{font-weight:600;font-size:0.95rem}
 .toast .close{margin-left:auto;background:transparent;border:0;color:inherit;cursor:pointer;font-size:1rem;padding:0.15rem;opacity:0.85;pointer-events:auto}
 
-/* Modal helper: ensure hidden attribute works */
-.preview-modal[hidden]{display:none !important}
-
 /* Accessibility & focus */
-/* Fallback outline for browsers without color-mix */
-:focus-visible{
-  outline:3px solid rgba(43,108,176,0.6);
-  outline-offset:3px;
-  border-radius:6px;
-}
-@supports (color: color-mix(in srgb, var(--color-primary) 60%, white)) {
-  :focus-visible{
-    outline:3px solid color-mix(in srgb, var(--color-primary) 60%, white);
-  }
-}
+:focus{outline:2px solid transparent;outline-offset:2px}
+:focus-visible{outline:3px solid var(--focus-outline);outline-offset:3px;border-radius:6px}
 a,button,input,select,textarea{font:inherit}
 
-/* Images: prefer semantic handling of decorative images in HTML (alt="" + aria-hidden) */
+/* Images */
 img{max-width:100%;height:auto;display:block}
 
 /* Responsive */
@@ -110,7 +114,8 @@ img{max-width:100%;height:auto;display:block}
 }
 @media (max-width:720px){
   .nav-links{display:none}
-  #nav-toggle{display:inline-block}
+  .nav-toggle{display:inline-block}
+  .site-nav.open .nav-links{display:flex}
   .toast-root{left:0;right:0;bottom:0;padding:0.75rem;align-items:center}
   .toast{width:calc(100% - 2rem);max-width:none}
 }
@@ -120,7 +125,7 @@ img{max-width:100%;height:auto;display:block}
   .article-card, .theme-card, .toast{transition:none;transform:none}
 }
 
-/* Performance hints for animated elements */
+/* Performance hints */
 .article-card, .theme-card{will-change:transform;backface-visibility:hidden;transform:translateZ(0)}
 
 /* Utility */
