@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "lib": ["ES2022", "DOM"],
-    "moduleResolution": "bundler",
+    "moduleResolution": "node",
     "allowJs": true,
     "checkJs": false,
     "jsx": "react-jsx",
@@ -24,8 +24,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["public/*"],
-      "@js/*": ["public/js/*"]
-    }
+      "@js/*": ["public/js/*"],
+      "src/*": ["src/*"]
+    },
+    "types": ["node"]
   },
   "include": ["public/**/*", "src/**/*"],
   "exclude": ["node_modules", "dist", "build"]

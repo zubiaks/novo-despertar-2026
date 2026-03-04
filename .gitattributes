@@ -1,2 +1,22 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Force LF for common text files
+*.js text
+*.ts text
+*.json text
+*.html text
+*.css text
+*.md text
+*.yml text
+*.yaml text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+
+# Ensure .gitattributes itself is tracked as text
+.gitattributes text
